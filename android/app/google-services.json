@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "332993389586",
+    "project_id": "travelcustom-40e3c",
+    "storage_bucket": "travelcustom-40e3c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:332993389586:android:48a3bd152cdb77bd1c24cb",
+        "android_client_info": {
+          "package_name": "com.TravelCustom.travelcustom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDv7iosYEC1WR5nQ-nnYi2XeuX3nziY1GE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
