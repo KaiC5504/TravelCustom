@@ -42,10 +42,14 @@ class HomePage extends StatelessWidget {
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.done:
-            // print(FirebaseAuth.instance.currentUser);
-            // print('Email: ${FirebaseAuth.instance.currentUser?.email}');
-            // print('UID: ${FirebaseAuth.instance.currentUser?.uid}');
-            return const LoginView();
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              print('Email: ${user.email}');
+              print('UID: ${user.uid}');
+            } else {
+              return const LoginView();
+            }
+            return const Text('Welcome to TravelCustom');
           default:
             return const CircularProgressIndicator();
         }
