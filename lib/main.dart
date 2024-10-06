@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:travelcustom/firebase_options.dart';
 import 'package:travelcustom/views/login_view.dart';
 import 'package:travelcustom/views/register_view.dart';
-import 'dart:developer' as devtools show log;
+
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login/': (context) => const LoginView(),
         '/register/': (context) => const RegisterView(),
+        '/travel/': (context) => const TravelView(), 
       },
     );
   }
@@ -82,6 +83,7 @@ class _TravelViewState extends State<TravelView> {
                   final userLogout = await showLogOutDialog(context);
                   if (userLogout) {
                     await FirebaseAuth.instance.signOut();
+                    // ignore: use_build_context_synchronously
                     Navigator.of(context)
                         .pushNamedAndRemoveUntil('/login/', (_) => false);
                   }
