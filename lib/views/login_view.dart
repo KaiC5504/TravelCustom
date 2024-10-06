@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as devtools show log;
 import 'package:travelcustom/constants/routes.dart';
-// import 'package:travelcustom/utilities/display_error.dart';
+import 'package:travelcustom/utilities/display_error.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -69,6 +69,7 @@ class _LoginViewState extends State<LoginView> {
                 String errorMessage = 'Please fill in all fields';
                 // ignore: use_build_context_synchronously
                 displayCustomErrorMessage(context, errorMessage);
+                devtools.log('Empty fields');
                 return;
               }
 
@@ -85,11 +86,16 @@ class _LoginViewState extends State<LoginView> {
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'invalid-credential') {
                   devtools.log('Invalid credentials');
-                  String errorMessage = 'Invalid credentials';
+                  String errorMessage = 'Invalid Email or Password';
                   // ignore: use_build_context_synchronously
                   displayCustomErrorMessage(context, errorMessage);
-                } else {
-                  String errorMessage = e.code;
+                } else if (e.code == 'invalid-email') {
+                  String errorMessage = 'Invalid email format';
+                  // ignore: use_build_context_synchronously
+                  displayCustomErrorMessage(context, errorMessage);
+                } else { 
+                  String errorMessage = e.toString();
+                  devtools.log(e.toString());
                   // ignore: use_build_context_synchronously
                   displayCustomErrorMessage(context, errorMessage);
                 }
@@ -121,85 +127,6 @@ class _LoginViewState extends State<LoginView> {
       ),
     );
   }
-}
-
-class CustomErrorMessage extends StatelessWidget {
-  const CustomErrorMessage({
-    super.key,
-    required this.errorMessage,
-  });
-
-  final String errorMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      height: 90,
-      decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 210, 127, 121),
-        borderRadius: BorderRadius.all(
-          Radius.circular(20),
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Warning",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              errorMessage,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-void displayCustomErrorMessage(BuildContext context, String errorMessage) {
-  showModalBottomSheet(
-    context: context,
-    isDismissible: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return GestureDetector(
-        onTap: () {
-          Navigator.of(context).pop();
-        },
-        child: Container(
-          color: Colors.transparent,
-          child: GestureDetector(
-            onTap: () {},
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
-                child: CustomErrorMessage(errorMessage: errorMessage),
-              ),
-            ),
-          ),
-        ),
-      );
-    },
-  );
 }
 
 class ShowPassword extends StatefulWidget {
