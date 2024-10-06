@@ -22,6 +22,10 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const HomePage(),
+      routes: {
+        '/login/': (context) => const LoginView(),
+        '/register/': (context) => const RegisterView(),
+      },
     );
   }
 }
@@ -31,28 +35,21 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title:
-            const Text('TravelCustom', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color.fromARGB(255, 162, 136, 222),
+    return FutureBuilder(
+      future: Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
       ),
-      body: FutureBuilder(
-        future: Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        ),
-        builder: (context, snapshot) {
-          switch (snapshot.connectionState) {
-            case ConnectionState.done:
-              print(FirebaseAuth.instance.currentUser);
-              print('Email: ${FirebaseAuth.instance.currentUser?.email}');
-              print('UID: ${FirebaseAuth.instance.currentUser?.uid}');
-              return const LoginView();
-            default:
-              return Text('App is Loading...');
-          }
-        },
-      ),
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.done:
+            // print(FirebaseAuth.instance.currentUser);
+            // print('Email: ${FirebaseAuth.instance.currentUser?.email}');
+            // print('UID: ${FirebaseAuth.instance.currentUser?.uid}');
+            return const LoginView();
+          default:
+            return const CircularProgressIndicator();
+        }
+      },
     );
   }
 }
