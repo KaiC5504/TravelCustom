@@ -1,7 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as devtools show log;
-
+import 'package:travelcustom/utilities/display_error.dart';
 import 'package:travelcustom/constants/routes.dart';
 
 class RegisterView extends StatefulWidget {
@@ -64,6 +66,14 @@ class _RegisterViewState extends State<RegisterView> {
             onPressed: () async {
               final email = _email.text;
               final password = _password.text;
+
+              if (email.isEmpty || password.isEmpty) {
+                String errorMessage = 'Please fill in all fields';
+                displayCustomErrorMessage(context, errorMessage);
+                devtools.log('Empty fields');
+                return;
+              }
+
               try {
                 final userCredential = await FirebaseAuth.instance
                     .createUserWithEmailAndPassword(
@@ -72,10 +82,17 @@ class _RegisterViewState extends State<RegisterView> {
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'weak-password') {
                   devtools.log('Weak Password');
+                  String errorMessage =
+                      'Password need to be at least 6 characters';
+                  displayCustomErrorMessage(context, errorMessage);
                 } else if (e.code == 'email-already-in-use') {
+                  String errorMessage = 'Email already registered';
                   devtools.log('Email Registered');
+                  displayCustomErrorMessage(context, errorMessage);
                 } else if (e.code == 'invalid-email') {
                   devtools.log('Invalid Email');
+                  String errorMessage = 'Invalid email format';
+                  displayCustomErrorMessage(context, errorMessage);
                 }
               }
             },

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as devtools show log;
@@ -67,7 +69,6 @@ class _LoginViewState extends State<LoginView> {
 
               if (email.isEmpty || password.isEmpty) {
                 String errorMessage = 'Please fill in all fields';
-                // ignore: use_build_context_synchronously
                 displayCustomErrorMessage(context, errorMessage);
                 devtools.log('Empty fields');
                 return;
@@ -78,7 +79,6 @@ class _LoginViewState extends State<LoginView> {
                   email: email,
                   password: password,
                 );
-                // ignore: use_build_context_synchronously
                 Navigator.of(context).pushNamedAndRemoveUntil(
                   travelRoute,
                   (route) => false,
@@ -87,22 +87,18 @@ class _LoginViewState extends State<LoginView> {
                 if (e.code == 'invalid-credential') {
                   devtools.log('Invalid credentials');
                   String errorMessage = 'Invalid Email or Password';
-                  // ignore: use_build_context_synchronously
                   displayCustomErrorMessage(context, errorMessage);
                 } else if (e.code == 'invalid-email') {
                   String errorMessage = 'Invalid email format';
-                  // ignore: use_build_context_synchronously
                   displayCustomErrorMessage(context, errorMessage);
-                } else { 
+                } else {
                   String errorMessage = e.toString();
                   devtools.log(e.toString());
-                  // ignore: use_build_context_synchronously
                   displayCustomErrorMessage(context, errorMessage);
                 }
               } catch (e) {
                 String errorMessage = e.toString();
                 devtools.log(e.toString());
-                // ignore: use_build_context_synchronously
                 displayCustomErrorMessage(context, errorMessage);
               }
             },
