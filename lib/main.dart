@@ -5,6 +5,8 @@ import 'package:travelcustom/constants/routes.dart';
 import 'package:travelcustom/firebase_options.dart';
 import 'package:travelcustom/views/login_view.dart';
 import 'package:travelcustom/views/register_view.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:travelcustom/views/search_view.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +29,7 @@ class MyApp extends StatelessWidget {
         registerRoute: (context) => const RegisterView(),
         loginRoute: (context) => const LoginView(),
         travelRoute: (context) => const TravelView(),
+        searchRoute: (context) => const SearchPage(),
       },
     );
   }
@@ -58,8 +61,6 @@ class HomePage extends StatelessWidget {
   }
 }
 
-enum MenuAction { logout }
-
 class TravelView extends StatefulWidget {
   const TravelView({super.key});
 
@@ -68,80 +69,273 @@ class TravelView extends StatefulWidget {
 }
 
 class _TravelViewState extends State<TravelView> {
+  // Fetch the destinations from Firestore
+  Stream<QuerySnapshot> _getDestinations() {
+    return FirebaseFirestore.instance.collection('destinations').snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TravelCustom',
-            style: TextStyle(color: Colors.black, fontSize: 30)),
-        backgroundColor: const Color.fromARGB(255, 182, 204, 216),
-        actions: [
-          PopupMenuButton<MenuAction>(
-            onSelected: (value) async {
-              switch (value) {
-                case MenuAction.logout:
-                  final userLogout = await showLogOutDialog(context);
-                  if (userLogout) {
-                    await FirebaseAuth.instance.signOut();
-                    // ignore: use_build_context_synchronously
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      loginRoute,
-                      (_) => false,
-                    );
-                  }
-                  break;
-              }
-            },
-            itemBuilder: (context) {
-              return const [
-                PopupMenuItem<MenuAction>(
-                  value: MenuAction.logout,
-                  child: Center(
-                    child: Text(
-                      'Logout',
-                      style: TextStyle(
-                          color: Color.fromARGB(255, 12, 9, 9),
-                          fontSize: 15,
-                          fontFamily: 'Roboto'),
-                    ),
-                  ),
-                ),
-              ];
-            },
-            color: Color(0xFFD4EAF7),
-            position: PopupMenuPosition.under,
-            offset: const Offset(0, 6),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          )
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 0, // Remove default AppBar
       ),
-      body: const Text('TravelCustom'),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            // Header: Travel Recommendation
+            Center(
+              child: Text(
+                'Travel Recommendation',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // Section: Malaysia
+            Text(
+              'Malaysia',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Fetch and display images from Firestore in horizontal scroll
+            StreamBuilder<QuerySnapshot>(
+              stream: _getDestinations(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                      child: Text('Error loading destinations'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No destinations available'));
+                }
+
+                final destinations = snapshot.data!.docs;
+
+                return SizedBox(
+                  height: 120, // Height for the horizontal list
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: destinations.length,
+                    itemBuilder: (context, index) {
+                      var destinationData =
+                          destinations[index].data() as Map<String, dynamic>;
+
+                      return Container(
+                        width: 100,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.circular(15),
+                          image: destinationData['images'] != null &&
+                                  destinationData['images'].isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(
+                                      destinationData['images'][0]),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: Stack(
+                          // Use Stack to overlay the text at the bottom center
+                          children: [
+                            Align(
+                              alignment: Alignment
+                                  .bottomCenter, // Align text at the bottom center
+                              child: Container(
+                                padding: const EdgeInsets.all(8.0),
+                                color: const Color.fromARGB(34, 0, 0,
+                                    0), // Semi-transparent background for better readability
+                                child: Text(
+                                  destinationData['destinations'] ??
+                                      'No Destination', // Fallback if 'destination' is missing
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 30),
+
+            //Search Bar
+            GestureDetector(
+              onTap: () {
+                // Navigate to Search Page when search bar is tapped
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SearchPage()),
+                );
+              },
+              child: Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.search, color: Colors.grey),
+                    SizedBox(width: 10),
+                    Text(
+                      'Search for Location',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Trending Location Section
+            Text(
+              'Trending Location',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+
+            // Placeholder for trending location card
+            Container(
+              height: 150,
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Location'),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: Text('Add to plan'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-Future<bool> showLogOutDialog(BuildContext context) {
-  return showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text('Log out'),
-        content: const Text('Are you sure you want to log out?'),
-        actions: [
-          TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-              child: const Text('Log out')),
-        ],
-      );
-    },
-  ).then((value) => value ?? false);
-}
+
+
+
+// enum MenuAction { logout }
+
+// class TravelView extends StatefulWidget {
+//   const TravelView({super.key});
+
+//   @override
+//   State<TravelView> createState() => _TravelViewState();
+// }
+
+// class _TravelViewState extends State<TravelView> {
+  
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text('TravelCustom',
+//             style: TextStyle(color: Colors.black, fontSize: 30)),
+//         backgroundColor: const Color.fromARGB(255, 182, 204, 216),
+//         actions: [
+//           PopupMenuButton<MenuAction>(
+//             onSelected: (value) async {
+//               switch (value) {
+//                 case MenuAction.logout:
+//                   final userLogout = await showLogOutDialog(context);
+//                   if (userLogout) {
+//                     await FirebaseAuth.instance.signOut();
+//                     // ignore: use_build_context_synchronously
+//                     Navigator.of(context).pushNamedAndRemoveUntil(
+//                       loginRoute,
+//                       (_) => false,
+//                     );
+//                   }
+//                   break;
+//               }
+//             },
+//             itemBuilder: (context) {
+//               return const [
+//                 PopupMenuItem<MenuAction>(
+//                   value: MenuAction.logout,
+//                   child: Center(
+//                     child: Text(
+//                       'Logout',
+//                       style: TextStyle(
+//                           color: Color.fromARGB(255, 12, 9, 9),
+//                           fontSize: 15,
+//                           fontFamily: 'Roboto'),
+//                     ),
+//                   ),
+//                 ),
+//               ];
+//             },
+//             color: Color(0xFFD4EAF7),
+//             position: PopupMenuPosition.under,
+//             offset: const Offset(0, 6),
+//             shape: RoundedRectangleBorder(
+//               borderRadius: BorderRadius.circular(20),
+//             ),
+//           )
+//         ],
+//       ),
+//       body: const Text('TravelCustom'),
+//     );
+//   }
+// }
+
+// Future<bool> showLogOutDialog(BuildContext context) {
+//   return showDialog<bool>(
+//     context: context,
+//     builder: (context) {
+//       return AlertDialog(
+//         title: const Text('Log out'),
+//         content: const Text('Are you sure you want to log out?'),
+//         actions: [
+//           TextButton(
+//               onPressed: () {
+//                 Navigator.of(context).pop(false);
+//               },
+//               child: const Text('Cancel')),
+//           TextButton(
+//               onPressed: () {
+//                 Navigator.of(context).pop(true);
+//               },
+//               child: const Text('Log out')),
+//         ],
+//       );
+//     },
+//   ).then((value) => value ?? false);
+// }

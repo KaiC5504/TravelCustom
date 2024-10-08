@@ -49,7 +49,7 @@ class _LoginViewState extends State<LoginView> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 image: DecorationImage(
-                  image: AssetImage('assets/images/login_image.png'),
+                  image: AssetImage('lib/assets/login/login.jpg'),
                   fit: BoxFit.cover,
                 ),
               ),
