@@ -57,7 +57,7 @@ class _RegisterViewState extends State<RegisterView> {
           ),
 
           //password textfield with show/hide password
-          ShowPassword(
+          PasswordInput(
             PasswordController: _password,
           ),
 
@@ -120,19 +120,19 @@ class _RegisterViewState extends State<RegisterView> {
   }
 }
 
-class ShowPassword extends StatefulWidget {
+class PasswordInput extends StatefulWidget {
   // ignore: non_constant_identifier_names
   final TextEditingController PasswordController;
 
   // ignore: non_constant_identifier_names
-  const ShowPassword({super.key, required this.PasswordController});
+  const PasswordInput({super.key, required this.PasswordController});
 
   @override
   // ignore: library_private_types_in_public_api
-  _ShowPasswordState createState() => _ShowPasswordState();
+  _PasswordInputState createState() => _PasswordInputState();
 }
 
-class _ShowPasswordState extends State<ShowPassword> {
+class _PasswordInputState extends State<PasswordInput> {
   bool _isObscured = true;
 
   @override

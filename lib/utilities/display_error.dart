@@ -51,24 +51,25 @@ class CustomErrorMessage extends StatelessWidget {
 }
 
 void displayCustomErrorMessage(BuildContext context, String errorMessage) {
-  showModalBottomSheet(
+  showDialog(
     context: context,
-    isDismissible: true,
-    backgroundColor: Colors.transparent,
+    barrierDismissible: true, // Allows closing by tapping outside
     builder: (context) {
       return GestureDetector(
         onTap: () {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(); // Dismiss on tap anywhere
         },
-        child: Container(
-          color: Colors.transparent,
-          child: GestureDetector(
-            onTap: () {},
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding:
+              const EdgeInsets.only(top: 0), // Ensures it starts at the top
+          child: Align(
+            alignment: Alignment.topCenter, // Position the message at the top
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
+              child: GestureDetector(
+                onTap:
+                    () {}, // Prevent dialog from closing when tapping on the message itself
                 child: CustomErrorMessage(errorMessage: errorMessage),
               ),
             ),
@@ -78,6 +79,38 @@ void displayCustomErrorMessage(BuildContext context, String errorMessage) {
     },
   );
 }
+
+
+
+
+// void displayCustomErrorMessage(BuildContext context, String errorMessage) {
+//   showModalBottomSheet(
+//     context: context,
+//     isDismissible: true,
+//     backgroundColor: Colors.transparent,
+//     builder: (context) {
+//       return GestureDetector(
+//         onTap: () {
+//           Navigator.of(context).pop();
+//         },
+//         child: Container(
+//           color: Colors.transparent,
+//           child: GestureDetector(
+//             onTap: () {},
+//             child: Align(
+//               alignment: Alignment.bottomCenter,
+//               child: Padding(
+//                 padding:
+//                     const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
+//                 child: CustomErrorMessage(errorMessage: errorMessage),
+//               ),
+//             ),
+//           ),
+//         ),
+//       );
+//     },
+//   );
+// }
 
 
 // class CustomErrorMessage extends StatelessWidget {

@@ -40,6 +40,21 @@ class _LoginViewState extends State<LoginView> {
       ),
       body: Column(
         children: [
+          // Add an image
+          Center(
+            child: Container(
+              width: 150,
+              height: 150,
+              margin: const EdgeInsets.only(top: 20, bottom: 20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: AssetImage('assets/images/login_image.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
           //username textfield
           Center(
             child: Container(
@@ -57,7 +72,7 @@ class _LoginViewState extends State<LoginView> {
           ),
 
           //password textfield with show/hide password
-          ShowPassword(
+          PasswordInput(
             PasswordController: _password,
           ),
 
@@ -125,19 +140,19 @@ class _LoginViewState extends State<LoginView> {
   }
 }
 
-class ShowPassword extends StatefulWidget {
+class PasswordInput extends StatefulWidget {
   // ignore: non_constant_identifier_names
   final TextEditingController PasswordController;
 
   // ignore: non_constant_identifier_names
-  const ShowPassword({super.key, required this.PasswordController});
+  const PasswordInput({super.key, required this.PasswordController});
 
   @override
   // ignore: library_private_types_in_public_api
-  _ShowPasswordState createState() => _ShowPasswordState();
+  _PasswordInputState createState() => _PasswordInputState();
 }
 
-class _ShowPasswordState extends State<ShowPassword> {
+class _PasswordInputState extends State<PasswordInput> {
   bool _isObscured = true;
 
   @override
