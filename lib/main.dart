@@ -3,13 +3,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'package:travelcustom/firebase_options.dart';
+import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'package:travelcustom/views/login_view.dart';
+import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/register_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:travelcustom/views/search_view.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -24,12 +27,13 @@ class MyApp extends StatelessWidget {
             seedColor: const Color.fromARGB(255, 136, 101, 197)),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const CustomBottomNavigationBar(),
       routes: {
         registerRoute: (context) => const RegisterView(),
         loginRoute: (context) => const LoginView(),
         travelRoute: (context) => const TravelView(),
         searchRoute: (context) => const SearchPage(),
+        profileRoute: (context) => const ProfilePage(),
       },
     );
   }
@@ -100,7 +104,6 @@ class _TravelViewState extends State<TravelView> {
             ),
             const SizedBox(height: 30),
 
-            // Section: Malaysia
             Text(
               'Malaysia',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
