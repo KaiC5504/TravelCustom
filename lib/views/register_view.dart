@@ -40,6 +40,13 @@ class _RegisterViewState extends State<RegisterView> {
       ),
       body: Column(
         children: [
+          Center(
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('Register',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+            ),
+          ),
           //username textfield
           Center(
             child: Container(

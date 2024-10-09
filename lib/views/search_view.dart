@@ -45,7 +45,7 @@ class _SearchPageState extends State<SearchPage> {
   // Handle debounced search input
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 150), () {
+    _debounce = Timer(const Duration(milliseconds: 50), () {
       setState(() {
         searchQuery = query;
       });
@@ -218,74 +218,83 @@ class _SearchPageState extends State<SearchPage> {
 
             // ListView to display local data
             Expanded(
-              child: ListView.builder(
-                itemCount: _filteredDestinations().length,
-                itemBuilder: (context, index) {
-                  var destination = _filteredDestinations()[index];
-                  return GestureDetector(
-                    onTap: () {
-                      // Navigate to the detailed page when tapped
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => DetailsPage(
-                            destinationId:
-                                destination['id'], // Pass the ID or name
-                          ),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          image: destination['imageUrl'] != null
-                              ? DecorationImage(
-                                  image: NetworkImage(destination['imageUrl']),
-                                  fit: BoxFit.cover,
-                                  colorFilter: ColorFilter.mode(
-                                    Colors.black.withOpacity(0.4),
-                                    BlendMode.darken,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                destination['name'] ?? 'Unknown Destination',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Rating: ${destination['rating']?.toString() ?? 'N/A'}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const Icon(Icons.star,
-                                      color: Colors.yellow, size: 18),
-                                ],
-                              ),
-                            ],
-                          ),
+              child: _filteredDestinations().isEmpty
+                  ? Center(
+                      child: Text(
+                        'No Destination Found',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredDestinations().length,
+                      itemBuilder: (context, index) {
+                        var destination = _filteredDestinations()[index];
+                        return GestureDetector(
+                          onTap: () {
+                            // Navigate to the detailed page when tapped
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => DetailsPage(
+                                  destinationId: destination['id'], // Pass the ID or name
+                                ),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                image: destination['imageUrl'] != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(destination['imageUrl']),
+                                        fit: BoxFit.cover,
+                                        colorFilter: ColorFilter.mode(
+                                          Colors.black.withOpacity(0.4),
+                                          BlendMode.darken,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      destination['name'] ?? 'Unknown Destination',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Rating: ${destination['rating']?.toString() ?? 'N/A'}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const Icon(Icons.star,
+                                            color: Colors.yellow, size: 18),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),

@@ -34,6 +34,7 @@ class MyApp extends StatelessWidget {
         travelRoute: (context) => const TravelView(),
         searchRoute: (context) => const SearchPage(),
         profileRoute: (context) => const ProfilePage(),
+        naviRoute: (context) => const CustomBottomNavigationBar(),
       },
     );
   }

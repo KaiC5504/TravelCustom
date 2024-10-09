@@ -40,19 +40,11 @@ class _LoginViewState extends State<LoginView> {
       ),
       body: Column(
         children: [
-          // Add an image
           Center(
-            child: Container(
-              width: 150,
-              height: 150,
-              margin: const EdgeInsets.only(top: 20, bottom: 20),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: AssetImage('lib/assets/login/login.jpg'),
-                  fit: BoxFit.cover,
-                ),
-              ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('Login',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
             ),
           ),
           //username textfield
@@ -95,7 +87,7 @@ class _LoginViewState extends State<LoginView> {
                   password: password,
                 );
                 Navigator.of(context).pushNamedAndRemoveUntil(
-                  travelRoute,
+                  naviRoute,
                   (route) => false,
                 );
               } on FirebaseAuthException catch (e) {
