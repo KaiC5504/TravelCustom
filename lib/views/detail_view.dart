@@ -57,11 +57,12 @@ class DetailsPage extends StatelessWidget {
                         : null,
                   ),
                   child: Align(
-                    alignment: Alignment.topLeft, // Align the text to the top left
+                    alignment:
+                        Alignment.topLeft, // Align the text to the top left
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        destinationData['destinations'] ?? 'Location in KL',
+                        destinationData['destination'] ?? 'Location in KL',
                         style: const TextStyle(
                           color: Colors.white,
                           backgroundColor: Colors.transparent,
@@ -73,7 +74,7 @@ class DetailsPage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
                 // Details about the location
                 Column(
@@ -94,7 +95,7 @@ class DetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 25),
 
                     // Best Time to Visit
                     const Text(
@@ -111,24 +112,7 @@ class DetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 10),
-
-                    // Country
-                    const Text(
-                      'Country:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      destinationData['country'] ?? '-',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 25),
 
                     // Average Rating
                     const Text(
@@ -145,7 +129,7 @@ class DetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 25),
 
                     // Popular Attractions
                     const Text(
@@ -156,13 +140,18 @@ class DetailsPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text(
-                      (destinationData['popular_attractions'] as List<dynamic>?)
-                              ?.join(', ') ??
-                          '-',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: (destinationData['popular_attractions']
+                                  as List<dynamic>?)
+                              ?.map((attraction) => Text(
+                                    attraction,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                    ),
+                                  ))
+                              .toList() ??
+                          [const Text('-')],
                     ),
                   ],
                 ),

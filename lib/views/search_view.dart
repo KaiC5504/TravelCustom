@@ -16,7 +16,7 @@ class _SearchPageState extends State<SearchPage> {
   Timer? _debounce;
 
   // Local list to store the fetched destinations
-  List<Map<String, dynamic>> localDestinations = [];
+  List<Map<String, dynamic>> localDestination = [];
 
   @override
   void initState() {
@@ -29,10 +29,10 @@ class _SearchPageState extends State<SearchPage> {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('destinations').get();
     setState(() {
-      localDestinations = snapshot.docs.map((doc) {
+      localDestination = snapshot.docs.map((doc) {
         return {
           'id': doc.id, // You can use this ID as a unique identifier
-          'name': doc['destinations'],
+          'name': doc['destination'],
           'rating': doc['average_rating'],
           'imageUrl': (doc['images'] as List<dynamic>).isNotEmpty
               ? doc['images'][0]
@@ -59,11 +59,11 @@ class _SearchPageState extends State<SearchPage> {
   // Filter local list based on search query
   List<Map<String, dynamic>> _filteredDestinations() {
     if (searchQuery.isEmpty) {
-      return localDestinations;
+      return localDestination;
     }
     String normalizedQuery = _normalizeQuery(searchQuery);
     // String capQuery = _capFirstLetter(searchQuery);
-    return localDestinations.where((destination) {
+    return localDestination.where((destination) {
       return _normalizeQuery(destination['name']).startsWith(normalizedQuery);
     }).toList();
   }
