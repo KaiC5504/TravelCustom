@@ -67,15 +67,7 @@ class _SearchPageState extends State<SearchPage> {
       return _normalizeQuery(destination['name']).startsWith(normalizedQuery);
     }).toList();
   }
-
-  // String _capFirstLetter(String input) {
-  //   if (input.isEmpty) return '';
-  //   return input.split(' ').map((word) {
-  //     if (word.isEmpty) return word;
-  //     return word[0].toUpperCase() + word.substring(1).toLowerCase();
-  //   }).join(' ');
-  // }
-
+  
   @override
   void dispose() {
     _debounce?.cancel();

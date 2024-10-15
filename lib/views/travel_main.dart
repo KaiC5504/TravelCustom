@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:travelcustom/views/detail_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 
 class TravelView extends StatefulWidget {
@@ -76,43 +77,58 @@ class _TravelViewState extends State<TravelView> {
                       var destinationData =
                           destinations[index].data() as Map<String, dynamic>;
 
-                      return Container(
-                        width: 100,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.rectangle,
-                          borderRadius: BorderRadius.circular(15),
-                          image: destinationData['images'] != null &&
-                                  destinationData['images'].isNotEmpty
-                              ? DecorationImage(
-                                  image: NetworkImage(
-                                      destinationData['images'][0]),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: Stack(
-                          // Use Stack to overlay the text at the bottom center
-                          children: [
-                            Align(
-                              alignment: Alignment
-                                  .bottomCenter, // Align text at the bottom center
-                              child: Container(
-                                padding: const EdgeInsets.all(8.0),
-                                color: const Color.fromARGB(34, 0, 0,
-                                    0), // Semi-transparent background for better readability
-                                child: Text(
-                                  destinationData['destination'] ??
-                                      'No Destination', // Fallback if 'destination' is missing
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+                      return GestureDetector(
+                        onTap: () {
+                          // Get the document ID for the selected destination
+              String destinationId = snapshot.data!.docs[index].id;
+                          // Navigate to the detailed page when tapped
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => DetailsPage(
+                                destinationId:
+                                    destinationId, // Pass the ID or name
                               ),
                             ),
-                          ],
+                          );
+                        },
+                        child: Container(
+                          width: 100,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.rectangle,
+                            borderRadius: BorderRadius.circular(15),
+                            image: destinationData['images'] != null &&
+                                    destinationData['images'].isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(
+                                        destinationData['images'][0]),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: Stack(
+                            // Use Stack to overlay the text at the bottom center
+                            children: [
+                              Align(
+                                alignment: Alignment
+                                    .bottomCenter, // Align text at the bottom center
+                                child: Container(
+                                  padding: const EdgeInsets.all(8.0),
+                                  color: const Color.fromARGB(34, 0, 0,
+                                      0), // Semi-transparent background for better readability
+                                  child: Text(
+                                    destinationData['destination'] ??
+                                        'No Destination', // Fallback if 'destination' is missing
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },

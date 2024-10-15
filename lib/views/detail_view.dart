@@ -1,17 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:travelcustom/utilities/content_filter.dart';
+import 'dart:developer' as devtools show log;
 
-class DetailsPage extends StatelessWidget {
+class DetailsPage extends StatefulWidget {
   final String destinationId;
 
   const DetailsPage({super.key, required this.destinationId});
+
+  @override
+  State<DetailsPage> createState() => _DetailsPageState();
+}
+
+class _DetailsPageState extends State<DetailsPage> {
+  bool _interactionRecorded = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   // Method to fetch destination details from Firestore by document ID
   Future<DocumentSnapshot> _getDestinationDetails() async {
     return FirebaseFirestore.instance
         .collection('destinations')
-        .doc(destinationId)
+        .doc(widget.destinationId)
         .get();
+  }
+
+  // Function to track user interaction
+  void trackUserViewInteraction(Map<String, dynamic> destinationData) {
+    // Get the user ID from Firebase Auth
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId != null) {
+      String destinationId = widget.destinationId;
+
+      // Check if 'tags' exists and is not null
+      if (destinationData['tags'] != null && destinationData['tags'] is List) {
+        List<String> destinationTypes =
+            List<String>.from(destinationData['tags']);
+
+        // Call the trackUserInteraction function
+        trackUserInteraction(userId, destinationId, destinationTypes, 'view');
+      } else {
+        // Handle the case where 'tags' is missing or not a list
+        devtools.log('tags is missing or not a valid list.');
+      }
+    } else {
+      // User not logged in
+      devtools.log('User is not logged in');
+    }
   }
 
   @override
@@ -25,7 +65,10 @@ class DetailsPage extends StatelessWidget {
         future: _getDestinationDetails(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child:
+                  CircularProgressIndicator(), // Loading indicator in the center
+            );
           }
 
           if (snapshot.hasError) {
@@ -37,6 +80,12 @@ class DetailsPage extends StatelessWidget {
           }
 
           final destinationData = snapshot.data!.data() as Map<String, dynamic>;
+
+          // Record interaction if not already recorded
+          if (!_interactionRecorded) {
+            trackUserViewInteraction(destinationData);
+            _interactionRecorded = true;
+          }
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -95,7 +144,7 @@ class DetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 15),
 
                     // Best Time to Visit
                     const Text(
@@ -112,7 +161,7 @@ class DetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 15),
 
                     // Average Rating
                     const Text(
@@ -129,7 +178,7 @@ class DetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 15),
 
                     // Popular Attractions
                     const Text(
