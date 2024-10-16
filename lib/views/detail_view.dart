@@ -30,7 +30,7 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 
   // Function to track user interaction
-  void trackUserViewInteraction(Map<String, dynamic> destinationData) {
+  void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
     // Get the user ID from Firebase Auth
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -43,7 +43,8 @@ class _DetailsPageState extends State<DetailsPage> {
             List<String>.from(destinationData['tags']);
 
         // Call the trackUserInteraction function
-        trackUserInteraction(userId, destinationId, destinationTypes, 'view');
+        await trackUserInteraction(userId, destinationId, destinationTypes, 'view');
+        showUserPreferences(userId);
       } else {
         // Handle the case where 'tags' is missing or not a list
         devtools.log('tags is missing or not a valid list.');

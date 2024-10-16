@@ -63,87 +63,120 @@ double euclideanDistance(List<double> a, List<double> b) {
   return sqrt(sum);
 }
 
-// Function to find the k nearest neighbors
-List<Map<String, dynamic>> knn(List<Map<String, dynamic>> destinations,
-    List<double> inputFeatures, int k) {
-  List<Map<String, dynamic>> sortedDestinations = List.from(destinations);
-
-  sortedDestinations.sort((a, b) {
-    List<double> featuresA = [
-      a['rating'],
-      a['entry_fee'],
-      a['public_transport']
-    ];
-    List<double> featuresB = [
-      b['rating'],
-      b['entry_fee'],
-      b['public_transport']
-    ];
-
-    double distanceA = euclideanDistance(featuresA, inputFeatures);
-    double distanceB = euclideanDistance(featuresB, inputFeatures);
-
-    return distanceA.compareTo(distanceB);
-  });
-
-  return sortedDestinations.take(k).toList();
-}
-
 Future<void> trackUserInteraction(String userId, String destinationId,
     List<String> tags, String interactionType) async {
-  // Query to check if the user already has an interaction with this destination
+  // Get all interactions for the user
   QuerySnapshot existingInteraction = await FirebaseFirestore.instance
       .collection('interaction')
       .where('user_id', isEqualTo: userId)
       .where('destination_id', isEqualTo: destinationId)
       .get();
 
+  // Get the current timestamp
+  Timestamp now = Timestamp.now();
+  double timeScore = calculateTimeBasedScore(now);
+
   if (existingInteraction.docs.isNotEmpty) {
-    //exist user
-    String interactionDocId = existingInteraction.docs.first.id;
-    FirebaseFirestore.instance
-        .collection('interaction')
-        .doc(interactionDocId)
-        .update(
-      {
-        'interaction_type': interactionType, // e.g., 'view', 'like', 'save'
-        'tags': tags,
-        'view_count': FieldValue.increment(1),
-        'timestamp': FieldValue.serverTimestamp(),
-      },
-    ).then(
-      (value) {
-        devtools.log(
-            'Successfully recorded $interactionType interaction for user $userId');
-      },
-    ).catchError(
-      (error) {
-        devtools.log(
-            'Failed to record $interactionType interaction for user $userId: $error');
-      },
-    );
+    // Existing interaction found, refresh all interactions
+    await refreshAllUserInteractions(
+        userId, destinationId, tags, interactionType);
   } else {
-    //not exist user
-    FirebaseFirestore.instance.collection('interaction').add(
-      {
-        'user_id': userId,
-        'destination_id': destinationId,
-        'interaction_type': interactionType,
-        'tags': tags,
-        'view_count': FieldValue.increment(1),
-        'timestamp': FieldValue.serverTimestamp(),
-      },
-    ).then(
-      (value) {
-        devtools.log(
-            'Created new interaction for user $userId with destination $destinationId');
-      },
-    ).catchError(
-      (error) {
-        devtools.log('Failed to create interaction: $error');
-      },
-    );
+    // No existing interaction for this destination, create a new interaction document
+    await FirebaseFirestore.instance.collection('interaction').add({
+      'user_id': userId,
+      'destination_id': destinationId,
+      'preference_score': timeScore,
+      'interaction_type': interactionType, // e.g., 'view', 'like', 'save'
+      'tags': tags,
+      'timestamp': now,
+    }).then((value) {
+      devtools.log(
+          'Created new interaction for user $userId with destination $destinationId, time score: $timeScore');
+    }).catchError((error) {
+      devtools.log('Failed to create interaction: $error');
+    });
+
+    // Now refresh all interactions (including this new one)
+    await refreshAllUserInteractions(
+        userId, destinationId, tags, interactionType);
   }
+}
+
+Future<void> refreshAllUserInteractions(
+    String userId,
+    String clickedDestinationId,
+    List<String> clickedTags,
+    String interactionType) async {
+  // Get all interactions for the user
+  QuerySnapshot allInteractionsSnapshot = await FirebaseFirestore.instance
+      .collection('interaction')
+      .where('user_id', isEqualTo: userId)
+      .get();
+
+  Timestamp now = Timestamp.now();
+  double timeScore = calculateTimeBasedScore(now);
+
+  // Loop through all interactions and refresh them
+  for (var doc in allInteractionsSnapshot.docs) {
+    var interactionData = doc.data() as Map<String, dynamic>;
+    String interactionDocId = doc.id;
+    String destinationId = interactionData['destination_id'];
+    Timestamp lastInteractionTime = interactionData['timestamp'];
+    double lastScore = interactionData['preference_score'];
+    List<String> originalTags =
+        List<String>.from(interactionData['tags'] ?? []);
+
+    // Calculate time decay for each interaction
+    double timeDecay = calculateTimeBasedScore(lastInteractionTime);
+    double newScore = lastScore * timeDecay;
+
+    if (destinationId == clickedDestinationId) {
+      // Increase the score for the clicked destination
+      newScore += timeScore;
+
+      // Update the interaction with the new preference score
+      await FirebaseFirestore.instance
+          .collection('interaction')
+          .doc(interactionDocId)
+          .update({
+        'preference_score': newScore,
+        'interaction_type': interactionType,
+        'tags': clickedTags,
+        'timestamp': now,
+      });
+    } else {
+      if (newScore < 0.01) {
+        newScore = 0; // Ensure that preference_score doesn't go below 0
+      }
+
+      await FirebaseFirestore.instance
+          .collection('interaction')
+          .doc(interactionDocId)
+          .update({
+        'preference_score': newScore,
+        'timestamp': now,
+      });
+    }
+  }
+
+  devtools.log('All interactions refreshed for user $userId');
+}
+
+// Time-based score
+double calculateTimeBasedScore(Timestamp timestamp) {
+  final now = DateTime.now();
+  final interactionTime = timestamp.toDate();
+  final timeDifference = now.difference(interactionTime).inSeconds;
+
+  //Recent higher score
+  double score = 1 / (1 + timeDifference);
+
+  //Set lowest
+  if (score < 0) {
+    score = 0;
+  }
+
+  return score;
 }
 
 Future<List<String>> detectUserPreferences(String userId) async {
@@ -194,3 +227,124 @@ Future<List<Map<String, dynamic>>> recommendDestinationsBasedOnPreferences(
 
   return recommendedDestinations;
 }
+
+Future<Map<String, double>> getUserPreferences(String userId) async {
+  // Fetch all interactions for the given user
+  QuerySnapshot userInteractions = await FirebaseFirestore.instance
+      .collection('interaction')
+      .where('user_id', isEqualTo: userId)
+      .get();
+
+  // Map to hold the cumulative preference score for each tag
+  Map<String, double> tagPreferences = {};
+
+  // Loop through each interaction and update the tag preference scores
+  for (var doc in userInteractions.docs) {
+    List<String> tags = List<String>.from(doc['tags']);
+    double preferenceScore = doc['preference_score'];
+    Timestamp interactionTimestamp = doc['timestamp'];
+
+    // Apply time decay to each interaction
+    double timeBasedWeight = calculateTimeBasedScore(interactionTimestamp);
+
+    // Update the cumulative score for each tag
+    for (String tag in tags) {
+      tagPreferences[tag] =
+          (tagPreferences[tag] ?? 0) + (preferenceScore * timeBasedWeight);
+    }
+  }
+
+  return tagPreferences; // Return the map of tag preferences
+}
+
+void showUserPreferences(String userId) async {
+  // Fetch the user's current preferences
+  Map<String, double> userPreferences = await getUserPreferences(userId);
+
+  // Sort the preferences by highest score (most interested tags)
+  var sortedPreferences = userPreferences.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value)); // Sort in descending order
+
+  // Display the sorted preferences
+  for (var preference in sortedPreferences) {
+    devtools.log(
+        'Tag: ${preference.key}, Score: ${preference.value.toStringAsFixed(2)}');
+  }
+
+  // Show the user's top preference (most interested)
+  if (sortedPreferences.isNotEmpty) {
+    devtools.log(
+        'User is currently most interested in: ${sortedPreferences.first.key}');
+  } else {
+    devtools.log('No preferences found for user.');
+  }
+}
+
+
+// Future<void> trackUserInteraction(String userId, String destinationId,
+//     List<String> tags, String interactionType) async {
+//   // Query to check if the user already has an interaction with this destination
+//   QuerySnapshot existingInteraction = await FirebaseFirestore.instance
+//       .collection('interaction')
+//       .where('user_id', isEqualTo: userId)
+//       .where('destination_id', isEqualTo: destinationId)
+//       .get();
+
+//   //Calcualate time score
+//   Timestamp now = Timestamp.now();
+//   double timeScore = calculateTimeBasedScore(now);
+
+//   //Existing preference
+//   if (existingInteraction.docs.isNotEmpty) {
+//     String interactionDocId = existingInteraction.docs.first.id;
+//     Timestamp lastInteractionTime = existingInteraction.docs.first['timestamp'];
+
+//     //Calcualate time score for preferences
+//     double lastScore = existingInteraction.docs.first['preference_score'];
+//     double timeDecay = calculateTimeBasedScore(lastInteractionTime);
+//     double newScore = lastScore * timeDecay + timeScore;
+
+//     FirebaseFirestore.instance
+//         .collection('interaction')
+//         .doc(interactionDocId)
+//         .update(
+//       {
+//         'preference_score': newScore,
+//         'interaction_type': interactionType, // e.g., 'view', 'like', 'save'
+//         'tags': tags,
+//         'timestamp': now,
+//       },
+//     ).then(
+//       (value) {
+//         devtools.log(
+//             'Successfully recorded $interactionType interaction for user $userId, time score: $newScore');
+//       },
+//     ).catchError(
+//       (error) {
+//         devtools.log(
+//             'Failed to record $interactionType interaction for user $userId: $error');
+//       },
+//     );
+//   } else {
+//     //not exist preference
+//     FirebaseFirestore.instance.collection('interaction').add(
+//       {
+//         'user_id': userId,
+//         'destination_id': destinationId,
+//         'preference_score': timeScore,
+//         'interaction_type': interactionType,
+//         'tags': tags,
+//         'timestamp': now,
+//       },
+//     ).then(
+//       (value) {
+//         devtools.log(
+//             'Created new interaction for user $userId with destination $destinationId, time score: $timeScore');
+//       },
+//     ).catchError(
+//       (error) {
+//         devtools.log('Failed to create interaction: $error');
+//       },
+//     );
+//   }
+// }
