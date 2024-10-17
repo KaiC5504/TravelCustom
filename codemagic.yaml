@@ -1,0 +1,23 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Install Dependencies
+        script: flutter pub get
+      - name: Set iOS Deployment Target
+        script: |
+          echo "Updating Podfile to use iOS 13.0"
+          sed -i '' 's/platform :ios, '[0-9.]*'/platform :ios, '13.0'/' ios/Podfile || true
+      - name: Clean Flutter Project
+        script: flutter clean
+      - name: Set up CocoaPods
+        script: |
+          cd ios
+          pod install
+      - name: Build iOS App
+        script: flutter build ios --release --no-codesign
+    artifacts:
+      - build/ios/ipa
