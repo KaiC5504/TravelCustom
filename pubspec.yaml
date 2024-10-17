@@ -42,6 +42,7 @@ dependencies:
   font_awesome_flutter: ^10.7.0
   get: ^4.6.6
   shared_preferences: ^2.3.2
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
