@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
+import 'package:travelcustom/views/travel_plan_view.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   const CustomBottomNavigationBar({super.key});
@@ -23,7 +24,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
             NavigationDestination(
                 icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
             NavigationDestination(
-                icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
+                icon: FaIcon(FontAwesomeIcons.suitcaseRolling), label: 'Plan'),
             NavigationDestination(
                 icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
             NavigationDestination(
@@ -41,9 +42,7 @@ class NavigationController extends GetxController {
 
   final screens = [
     const TravelView(),
-    Container(
-      color: Colors.white,
-    ),
+    const TravelPlanView(),
     Container(
       color: Colors.white,
     ),

@@ -123,8 +123,8 @@ Future<void> refreshAllUserInteractions(
     String destinationId = interactionData['destination_id'];
     Timestamp lastInteractionTime = interactionData['timestamp'];
     double lastScore = interactionData['preference_score'];
-    List<String> originalTags =
-        List<String>.from(interactionData['tags'] ?? []);
+    // List<String> originalTags =
+    //     List<String>.from(interactionData['tags'] ?? []);
 
     // Calculate time decay for each interaction
     double timeDecay = calculateTimeBasedScore(lastInteractionTime);

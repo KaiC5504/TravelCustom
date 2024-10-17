@@ -3,7 +3,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:travelcustom/utilities/content_filter.dart';
 import 'package:travelcustom/views/detail_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'dart:developer' as devtools show log;
@@ -281,7 +280,17 @@ class _TravelViewState extends State<TravelView> {
                     children: recommendedDestinations.map((destinationData) {
                       return GestureDetector(
                         onTap: () {
+                          devtools.log(destinationData.toString()); // Log the entire destinationData to check the structure
                           //Navigate to detail page
+                          String destinationId = destinationData['id'];
+
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => DetailsPage(
+                                destinationId: destinationId,
+                              ),
+                            ),
+                          );
                         },
                         child: Container(
                           height: 150,
@@ -379,6 +388,7 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
   // Step 4: Add matching destinations to the recommendation list
   for (var doc in destinationSnapshot.docs) {
     var destinationData = doc.data() as Map<String, dynamic>;
+    destinationData['id'] = doc.id;
     recommendedDestinations.add(destinationData);
   }
 

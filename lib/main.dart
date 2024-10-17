@@ -9,6 +9,7 @@ import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/register_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
+import 'package:travelcustom/views/travel_plan_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
         searchRoute: (context) => const SearchPage(),
         profileRoute: (context) => const ProfilePage(),
         naviRoute: (context) => const CustomBottomNavigationBar(),
+        planRoute: (context) => const TravelPlanView(),
       },
     );
   }

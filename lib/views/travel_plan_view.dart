@@ -25,7 +25,8 @@ class _TravelPlanViewState extends State<TravelPlanView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Travelling Plan', style: TextStyle(color: Colors.black)),
+        title: const Text('My Travelling Plan',
+            style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -38,27 +39,40 @@ class _TravelPlanViewState extends State<TravelPlanView> {
             const SizedBox(height: 20),
 
             // Dropdown button for date selection
+            // Dropdown button with a black border
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                DropdownButton<String>(
-                  value: selectedDate,
-                  items: <String>['Date', 'Date1', 'Date2', 'Date3']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedDate = newValue!;
-                    });
-                  },
-                  style: const TextStyle(fontSize: 18),
-                  elevation: 16,
-                  icon: const Icon(Icons.arrow_drop_down),
-                  borderRadius: BorderRadius.circular(20),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: const Color.fromARGB(255, 88, 88, 88),
+                        width: 1), // Black border with 2px width
+                    borderRadius:
+                        BorderRadius.circular(20), // Optional: Rounded corners
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10), // Add some padding inside the container
+                  child: DropdownButton<String>(
+                    value: selectedDate,
+                    items: <String>['Date', 'Date1', 'Date2', 'Date3']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedDate = newValue!;
+                      });
+                    },
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                    elevation: 16,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    borderRadius: BorderRadius.circular(20),
+                    underline: Container(),
+                  ),
                 ),
               ],
             ),
@@ -80,11 +94,13 @@ class _TravelPlanViewState extends State<TravelPlanView> {
                       children: [
                         Padding(
                           padding: EdgeInsets.all(8.0),
-                          child: Text('Time', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text('Time',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                         Padding(
                           padding: EdgeInsets.all(8.0),
-                          child: Text('Location', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text('Location',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
