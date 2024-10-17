@@ -187,15 +187,22 @@ class _TravelViewState extends State<TravelView> {
                                   alignment: Alignment
                                       .bottomCenter, // Align text at the bottom center
                                   child: Container(
-                                    padding: const EdgeInsets.all(8.0),
-                                    color: const Color.fromARGB(34, 0, 0,
-                                        0), // Semi-transparent background for better readability
+                                    width: 150,
+                                    padding: const EdgeInsets.all(7.0),
+                                    decoration: BoxDecoration(
+                                      color: const Color.fromARGB(34, 0, 0, 0),
+                                      borderRadius: BorderRadius.only(
+                                        bottomLeft: Radius.circular(15),
+                                        bottomRight: Radius.circular(15),
+                                      ),
+                                    ),
                                     child: Text(
                                       destinationData['destination'] ??
-                                          'No Destination', // Fallback if 'destination' is missing
+                                          'No Destination',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -280,7 +287,8 @@ class _TravelViewState extends State<TravelView> {
                     children: recommendedDestinations.map((destinationData) {
                       return GestureDetector(
                         onTap: () {
-                          devtools.log(destinationData.toString()); // Log the entire destinationData to check the structure
+                          devtools.log(destinationData
+                              .toString()); // Log the entire destinationData to check the structure
                           //Navigate to detail page
                           String destinationId = destinationData['id'];
 
