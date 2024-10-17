@@ -18,13 +18,13 @@ workflows:
           cd build/ios/iphoneos
           mkdir Payload
           mv Runner.app Payload/
-          zip -r FlutterIpaExport.ipa Payload
+          zip -r TravelCustom.ipa Payload
       - name: Upload artifacts
         script: |
-          mv build/ios/iphoneos/FlutterIpaExport.ipa $CM_BUILD_DIR/
+          mv build/ios/iphoneos/TravelCustom.ipa $CM_BUILD_DIR/
     artifacts:
-      - FlutterIpaExport.ipa
+      - TravelCustom.ipa
     publishing:
       email:
         recipients:
-          - youremail@example.com
+          - kaichuan2004@gmail.com
