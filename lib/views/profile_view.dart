@@ -146,7 +146,7 @@ class _ProfilePageState extends State<ProfilePage> {
               // Display local name instantly if available
               Center(
                 child: Text(
-                  name ?? 'User',
+                  name ?? '',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
