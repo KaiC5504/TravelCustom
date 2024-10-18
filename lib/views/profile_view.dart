@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'dart:developer' as devtools show log;
 import 'package:travelcustom/views/favourite_view.dart';
+import 'package:travelcustom/views/profile_edit.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -45,6 +46,10 @@ class _ProfilePageState extends State<ProfilePage> {
       name = prefs.getString('user_name'); // Load name from local storage
       isLoading = false; // Data loaded
     });
+  }
+
+  Future<void> refreshProfileData() async {
+    await fetchUserData(); // Save name to local storage
   }
 
   @override
@@ -159,8 +164,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
               // Edit Profile Button
               ElevatedButton(
-                onPressed: () {
-                  // Placeholder for future function
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => const ProfileEditPage()),
+                  );
+
+                  if (result == true) { 
+                    await refreshProfileData(); // Refresh data after editing
+                  }
                 },
                 child: const Text('Edit Profile'),
               ),

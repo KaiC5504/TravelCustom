@@ -1,24 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:travelcustom/utilities/content_filter.dart';
 import 'dart:developer' as devtools show log;
 
 class DetailsPage extends StatefulWidget {
   final String destinationId;
+  final bool isFavourited; // Add this line
 
-  const DetailsPage({super.key, required this.destinationId});
+  const DetailsPage(
+      {super.key,
+      required this.destinationId,
+      this.isFavourited = false}); // Modify this line
 
   @override
   State<DetailsPage> createState() => _DetailsPageState();
 }
 
 class _DetailsPageState extends State<DetailsPage> {
+  bool _isFavourited = false;
   bool _interactionRecorded = false;
 
   @override
   void initState() {
     super.initState();
+    _isFavourited = widget.isFavourited;
+    _checkIfFavourited();
+  }
+
+  void _toggleFavourite() {
+    setState(() {
+      _isFavourited = !_isFavourited;
+    });
+
+    // Get the user ID from Firebase Auth
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId != null) {
+      DocumentReference userDocRef =
+          FirebaseFirestore.instance.collection('users').doc(userId);
+
+      if (_isFavourited) {
+        userDocRef.update({
+          'favourites': FieldValue.arrayUnion([widget.destinationId])
+        }).then((_) {
+          devtools.log('Favourite added successfully');
+        }).catchError((error) {
+          devtools.log('Failed to add favourite: $error');
+        });
+      } else {
+        userDocRef.update({
+          'favourites': FieldValue.arrayRemove([widget.destinationId])
+        }).then((_) {
+          devtools.log('Favourite removed successfully');
+        }).catchError((error) {
+          devtools.log('Failed to remove favourite: $error');
+        });
+      }
+    } else {
+      devtools.log('User is not logged in');
+    }
+    // You can also update Firebase or the database here when the user toggles favorite status
+    // For example:
+    // updateFavoriteStatusInFirebase(widget.placeId, _isFavorited);
+  }
+
+  void _checkIfFavourited() async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        List<dynamic> favourites = userDoc['favourites'] ?? [];
+        setState(() {
+          _isFavourited = favourites.contains(widget.destinationId);
+        });
+      }
+    } else {
+      devtools.log('User is not logged in');
+    }
   }
 
   // Method to fetch destination details from Firestore by document ID
@@ -43,7 +108,8 @@ class _DetailsPageState extends State<DetailsPage> {
             List<String>.from(destinationData['tags']);
 
         // Call the trackUserInteraction function
-        await trackUserInteraction(userId, destinationId, destinationTypes, 'view');
+        await trackUserInteraction(
+            userId, destinationId, destinationTypes, 'view');
         showUserPreferences(userId);
       } else {
         // Handle the case where 'tags' is missing or not a list
@@ -106,21 +172,39 @@ class _DetailsPageState extends State<DetailsPage> {
                           )
                         : null,
                   ),
-                  child: Align(
-                    alignment:
-                        Alignment.topLeft, // Align the text to the top left
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        destinationData['destination'] ?? 'Location in KL',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          backgroundColor: Colors.transparent,
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment:
+                            Alignment.topLeft, // Align the text to the top left
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            destinationData['destination'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              backgroundColor: Colors.transparent,
+                              fontSize: 25,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          onPressed: _toggleFavourite,
+                          icon: FaIcon(
+                            FontAwesomeIcons.solidStar,
+                            color: _isFavourited
+                                ? Colors.yellow
+                                : const Color.fromARGB(255, 169, 169, 169)
+                                    .withOpacity(0.7),
+                            size: 36.0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 

@@ -6,3 +6,4 @@ const profileRoute = '/profile/';
 const naviRoute = '/navi/';
 const planRoute = '/travelplan/';
 const favouriteRoute = '/favourite/';
+const editRoute = '/edit/';

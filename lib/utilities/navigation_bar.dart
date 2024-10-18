@@ -24,7 +24,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
             NavigationDestination(
                 icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
             NavigationDestination(
-                icon: FaIcon(FontAwesomeIcons.suitcaseRolling), label: 'Plan'),
+                icon: FaIcon(FontAwesomeIcons.map), label: 'Plan'),
             NavigationDestination(
                 icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
             NavigationDestination(
