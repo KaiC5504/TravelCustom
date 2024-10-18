@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'package:travelcustom/firebase_options.dart';
 import 'package:travelcustom/utilities/navigation_bar.dart';
+import 'package:travelcustom/views/favourite_view.dart';
 import 'package:travelcustom/views/login_view.dart';
 import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/register_view.dart';
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
         profileRoute: (context) => const ProfilePage(),
         naviRoute: (context) => const CustomBottomNavigationBar(),
         planRoute: (context) => const TravelPlanView(),
+        favouriteRoute: (context) => const FavouritePage(),
       },
     );
   }

@@ -5,3 +5,4 @@ const searchRoute = '/search/';
 const profileRoute = '/profile/';
 const naviRoute = '/navi/';
 const planRoute = '/travelplan/';
+const favouriteRoute = '/favourite/';
