@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'dart:developer' as devtools show log;
+import 'package:travelcustom/views/favourite_view.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -29,9 +30,9 @@ class _ProfilePageState extends State<ProfilePage> {
       final DocumentSnapshot userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
-      if (mounted) { 
+      if (mounted) {
         setState(() {
-          name = userDoc['name']; 
+          name = userDoc['name'];
         });
       }
     }
@@ -180,7 +181,12 @@ class _ProfilePageState extends State<ProfilePage> {
               ListTile(
                 leading: const Icon(Icons.favorite_outline),
                 title: const Text('Favourites'),
-                onTap: () {}, // Placeholder for future function
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => const FavouritePage()),
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.logout),
