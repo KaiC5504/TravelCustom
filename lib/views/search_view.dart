@@ -16,7 +16,7 @@ class _SearchPageState extends State<SearchPage> {
   Timer? _debounce;
 
   // Local list to store the fetched destinations
-  List<Map<String, dynamic>> localDestinations = [];
+  List<Map<String, dynamic>> localDestination = [];
 
   @override
   void initState() {
@@ -29,14 +29,15 @@ class _SearchPageState extends State<SearchPage> {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('destinations').get();
     setState(() {
-      localDestinations = snapshot.docs.map((doc) {
+      localDestination = snapshot.docs.map((doc) {
         return {
           'id': doc.id, // You can use this ID as a unique identifier
-          'name': doc['destinations'],
+          'name': doc['destination'],
           'rating': doc['average_rating'],
           'imageUrl': (doc['images'] as List<dynamic>).isNotEmpty
               ? doc['images'][0]
               : '',
+          'popularity': doc['number_of_reviews'],
         };
       }).toList();
     });
@@ -58,23 +59,29 @@ class _SearchPageState extends State<SearchPage> {
 
   // Filter local list based on search query
   List<Map<String, dynamic>> _filteredDestinations() {
-    if (searchQuery.isEmpty) {
-      return localDestinations;
-    }
-    String normalizedQuery = _normalizeQuery(searchQuery);
-    // String capQuery = _capFirstLetter(searchQuery);
-    return localDestinations.where((destination) {
-      return _normalizeQuery(destination['name']).startsWith(normalizedQuery);
-    }).toList();
-  }
+    List<Map<String, dynamic>> filteredList = [];
 
-  // String _capFirstLetter(String input) {
-  //   if (input.isEmpty) return '';
-  //   return input.split(' ').map((word) {
-  //     if (word.isEmpty) return word;
-  //     return word[0].toUpperCase() + word.substring(1).toLowerCase();
-  //   }).join(' ');
-  // }
+    if (searchQuery.isEmpty) {
+      filteredList = List.from(localDestination);
+    } else {
+      String normalizedQuery = _normalizeQuery(searchQuery);
+      filteredList = localDestination.where((destination) {
+        return _normalizeQuery(destination['name']).startsWith(normalizedQuery);
+      }).toList();
+    }
+
+    // Apply sorting based on the selectedSort value
+    if (selectedSort == 'Name') {
+      filteredList.sort((a, b) => a['name'].compareTo(b['name']));
+    } else if (selectedSort == 'Rating') {
+      filteredList.sort((a, b) => b['rating'].compareTo(a['rating']));
+    } else if (selectedSort == 'Popularity') {
+      // Assuming you have a 'popularity' field
+      filteredList.sort((a, b) => b['popularity'].compareTo(a['popularity']));
+    }
+
+    return filteredList;
+  }
 
   @override
   void dispose() {
@@ -238,7 +245,8 @@ class _SearchPageState extends State<SearchPage> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => DetailsPage(
-                                  destinationId: destination['id'], // Pass the ID or name
+                                  destinationId:
+                                      destination['id'], // Pass the ID or name
                                 ),
                               ),
                             );
@@ -251,7 +259,8 @@ class _SearchPageState extends State<SearchPage> {
                                 borderRadius: BorderRadius.circular(15),
                                 image: destination['imageUrl'] != null
                                     ? DecorationImage(
-                                        image: NetworkImage(destination['imageUrl']),
+                                        image: NetworkImage(
+                                            destination['imageUrl']),
                                         fit: BoxFit.cover,
                                         colorFilter: ColorFilter.mode(
                                           Colors.black.withOpacity(0.4),
@@ -266,7 +275,8 @@ class _SearchPageState extends State<SearchPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      destination['name'] ?? 'Unknown Destination',
+                                      destination['name'] ??
+                                          'Unknown Destination',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 20,

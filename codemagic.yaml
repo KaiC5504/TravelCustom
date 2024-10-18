@@ -1,0 +1,30 @@
+workflows:
+  ios-workflow:
+    name: iOS IPA build
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+          pod repo update
+      - name: Build iOS without codesigning
+        script: |
+          flutter build ios --release --no-codesign
+      - name: Create IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          mv Runner.app Payload/
+          zip -r TravelCustom.ipa Payload
+      - name: Upload artifacts
+        script: |
+          mv build/ios/iphoneos/TravelCustom.ipa $CM_BUILD_DIR/
+    artifacts:
+      - TravelCustom.ipa
+    publishing:
+      email:
+        recipients:
+          - kaichuan2004@gmail.com
