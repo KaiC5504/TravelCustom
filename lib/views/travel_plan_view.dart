@@ -489,7 +489,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
           if (screenWidth >= 430) {
             lineXY = 0.3;
           } else if (screenWidth >= 400) {
-            lineXY = 0.28;
+            lineXY = 0.32;
           } else {
             lineXY = 0.35;
           }
