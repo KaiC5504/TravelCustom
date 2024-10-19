@@ -477,73 +477,105 @@ class _TravelPlanViewState extends State<TravelPlanView> {
       {bool isFirst = false,
       bool isLast = false,
       required VoidCallback onIconPressed}) {
-    return SizedBox(
-      height: 110,
-      child: TimelineTile(
-        alignment: TimelineAlign.manual,
-        lineXY: 0.27,
-        isFirst: isFirst,
-        isLast: isLast,
-        indicatorStyle: IndicatorStyle(
-          width: 40,
-          color: const Color.fromARGB(255, 135, 139, 227),
-          padding: EdgeInsets.all(6),
-          iconStyle: IconStyle(
-            iconData: icon,
-            color: Colors.white,
-            fontSize: 30,
-          ),
-        ),
-        beforeLineStyle: LineStyle(
-          color: Color.fromARGB(255, 127, 127, 127),
-          thickness: 6,
-        ),
-        afterLineStyle: LineStyle(
-          color: const Color.fromARGB(255, 127, 127, 127),
-          thickness: 6,
-        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double screenWidth = MediaQuery.of(context).size.width;
+        devtools.log('Screen width: $screenWidth');
+        double lineXY;
+        bool isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+        devtools.log('Is iOS: $isIOS');
 
-        //Time
-        startChild: Container(
-          alignment: Alignment.centerRight,
-          width: 80,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 10.0),
-            child: Text(
-              time,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        if (isIOS) {
+          if (screenWidth >= 430) {
+            lineXY = 0.3;
+          } else if (screenWidth >= 400) {
+            lineXY = 0.28;
+          } else {
+            lineXY = 0.35;
+          }
+        } else {
+          if (screenWidth >= 448) {
+            lineXY = 0.27; 
+          } else if (screenWidth >= 426) {
+            lineXY = 0.28; 
+          } else if (screenWidth >= 412) {
+            lineXY = 0.29; 
+          } else if (screenWidth >= 350) {
+            lineXY = 0.35;
+          } else {
+            lineXY = 0.45; 
+          }
+        }
+
+        return SizedBox(
+          height: 110,
+          child: TimelineTile(
+            alignment: TimelineAlign.manual,
+            lineXY: lineXY,
+            isFirst: isFirst,
+            isLast: isLast,
+            indicatorStyle: IndicatorStyle(
+              width: 40,
+              color: const Color.fromARGB(255, 135, 139, 227),
+              padding: EdgeInsets.all(6),
+              iconStyle: IconStyle(
+                iconData: icon,
+                color: Colors.white,
+                fontSize: 30,
+              ),
             ),
-          ),
-        ),
+            beforeLineStyle: LineStyle(
+              color: Color.fromARGB(255, 127, 127, 127),
+              thickness: 6,
+            ),
+            afterLineStyle: LineStyle(
+              color: const Color.fromARGB(255, 127, 127, 127),
+              thickness: 6,
+            ),
 
-        //Activity
-        endChild: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                  ],
+            // Time
+            startChild: Container(
+              alignment: Alignment.centerRight,
+              width: 80,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: Text(
+                  time,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.close),
-                color: Colors.red,
-                onPressed: onIconPressed,
+            ),
+
+            // Activity
+            endChild: Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    color: Colors.red,
+                    onPressed: onIconPressed,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
