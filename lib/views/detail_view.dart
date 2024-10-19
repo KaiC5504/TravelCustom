@@ -10,12 +10,10 @@ import 'dart:developer' as devtools show log;
 
 class DetailsPage extends StatefulWidget {
   final String destinationId;
-  final bool isFavourited; // Add this line
+  final bool isFavourited;
 
   const DetailsPage(
-      {super.key,
-      required this.destinationId,
-      this.isFavourited = false}); // Modify this line
+      {super.key, required this.destinationId, this.isFavourited = false});
 
   @override
   State<DetailsPage> createState() => _DetailsPageState();
@@ -37,7 +35,6 @@ class _DetailsPageState extends State<DetailsPage> {
       _isFavourited = !_isFavourited;
     });
 
-    // Get the user ID from Firebase Auth
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
     if (userId != null) {
@@ -64,9 +61,6 @@ class _DetailsPageState extends State<DetailsPage> {
     } else {
       devtools.log('User is not logged in');
     }
-    // You can also update Firebase or the database here when the user toggles favorite status
-    // For example:
-    // updateFavoriteStatusInFirebase(widget.placeId, _isFavorited);
   }
 
   void _checkIfFavourited() async {
@@ -89,7 +83,6 @@ class _DetailsPageState extends State<DetailsPage> {
     }
   }
 
-  // Method to fetch destination details from Firestore by document ID
   Future<DocumentSnapshot> _getDestinationDetails() async {
     return FirebaseFirestore.instance
         .collection('destinations')
@@ -97,39 +90,31 @@ class _DetailsPageState extends State<DetailsPage> {
         .get();
   }
 
-  // Function to track user interaction
   void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
-    // Get the user ID from Firebase Auth
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
     if (userId != null) {
       String destinationId = widget.destinationId;
 
-      // Check if 'tags' exists and is not null
       if (destinationData['tags'] != null && destinationData['tags'] is List) {
         List<String> destinationTypes =
             List<String>.from(destinationData['tags']);
 
-        // Call the trackUserInteraction function
         await trackUserInteraction(
             userId, destinationId, destinationTypes, 'view');
         showUserPreferences(userId);
       } else {
-        // Handle the case where 'tags' is missing or not a list
         devtools.log('tags is missing or not a valid list.');
       }
     } else {
-      // User not logged in
       devtools.log('User is not logged in');
     }
   }
 
-  // Function to add activity to travel plan
   void _addToPlan() async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
     if (userId != null) {
-      // Show time picker to select time
       TimeOfDay? selectedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.now(),
@@ -138,7 +123,6 @@ class _DetailsPageState extends State<DetailsPage> {
       if (selectedTime != null) {
         String formattedTime = selectedTime.format(context);
 
-        // Get reference to user's travel plan
         QuerySnapshot travelPlansSnapshot = await FirebaseFirestore.instance
             .collection('travel_plans')
             .where('userId', isEqualTo: userId)
@@ -148,14 +132,12 @@ class _DetailsPageState extends State<DetailsPage> {
           DocumentReference travelPlanDocRef =
               travelPlansSnapshot.docs.first.reference;
 
-          // Add the destination and selected time to activities array
           travelPlanDocRef.update({
             'activities': FieldValue.arrayUnion([
               {'destination': widget.destinationId, 'time': formattedTime}
             ])
           }).then((_) {
             devtools.log('Activity added to travel plan successfully');
-            // Navigate to TravelPlanView after success
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
@@ -201,18 +183,16 @@ class _DetailsPageState extends State<DetailsPage> {
 
           final destinationData = snapshot.data!.data() as Map<String, dynamic>;
 
-          // Record interaction if not already recorded
           if (!_interactionRecorded) {
             trackUserViewInteraction(destinationData);
             _interactionRecorded = true;
           }
 
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image of the location
                 Container(
                   height: 200,
                   decoration: BoxDecoration(
@@ -260,14 +240,10 @@ class _DetailsPageState extends State<DetailsPage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
-                // Details about the location
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Description
                     const Text(
                       'Description:',
                       style: TextStyle(
@@ -283,8 +259,6 @@ class _DetailsPageState extends State<DetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
-                    // Best Time to Visit
                     const Text(
                       'Best Time to Visit:',
                       style: TextStyle(
@@ -300,8 +274,6 @@ class _DetailsPageState extends State<DetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
-                    // Average Rating
                     const Text(
                       'Average Rating:',
                       style: TextStyle(
@@ -317,8 +289,6 @@ class _DetailsPageState extends State<DetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
-                    // Popular Attractions
                     const Text(
                       'Popular Attractions:',
                       style: TextStyle(
@@ -343,8 +313,6 @@ class _DetailsPageState extends State<DetailsPage> {
                   ],
                 ),
                 const SizedBox(height: 30),
-
-                // Add to Plan button
                 Center(
                   child: ElevatedButton(
                     onPressed: _addToPlan,
