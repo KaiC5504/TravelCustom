@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as devtools show log;
 import 'package:travelcustom/utilities/display_error.dart';
 import 'package:travelcustom/constants/routes.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -86,6 +87,25 @@ class _RegisterViewState extends State<RegisterView> {
                     .createUserWithEmailAndPassword(
                         email: email, password: password);
                 devtools.log(userCredential.toString());
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  loginRoute,
+                  (route) => false,
+                );
+
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .set(
+                    {
+                      'email': email,
+                      'password': password,
+                      'name': '',
+                      'planId': '',
+                    },
+                  );
+                }
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'weak-password') {
                   devtools.log('Weak Password');

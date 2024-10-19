@@ -14,22 +14,60 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
     return Scaffold(
       bottomNavigationBar: Obx(
-        () => NavigationBar(
-          height: 80,
-          elevation: 0,
-          selectedIndex: controller.selectedIndex.value,
-          onDestinationSelected: (index) =>
-              controller.selectedIndex.value = index,
-          destinations: const [
-            NavigationDestination(
-                icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
-            NavigationDestination(
-                icon: FaIcon(FontAwesomeIcons.map), label: 'Plan'),
-            NavigationDestination(
-                icon: FaIcon(FontAwesomeIcons.house), label: 'Home'),
-            NavigationDestination(
-                icon: FaIcon(FontAwesomeIcons.user), label: 'Profile'),
-          ],
+        () => Padding(
+          padding: const EdgeInsets.only(
+              bottom: 20.0,
+              left: 20.0,
+              right: 20.0), // Add padding for floating effect
+          child: Container(
+            height: 70,
+            decoration: BoxDecoration(
+              color:
+                  const Color.fromARGB(255, 56, 56, 56), // Set background color
+              borderRadius: BorderRadius.circular(30), // Rounded corners
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3), // Shadow color
+                  spreadRadius: 5,
+                  blurRadius: 15,
+                  offset: Offset(0, 5), // Shadow position
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  icon: FaIcon(FontAwesomeIcons.house,
+                      color: controller.selectedIndex.value == 0
+                          ? Colors.white
+                          : Colors.grey),
+                  onPressed: () => controller.selectedIndex.value = 0,
+                ),
+                IconButton(
+                  icon: FaIcon(FontAwesomeIcons.map,
+                      color: controller.selectedIndex.value == 1
+                          ? Colors.white
+                          : Colors.grey),
+                  onPressed: () => controller.selectedIndex.value = 1,
+                ),
+                IconButton(
+                  icon: FaIcon(FontAwesomeIcons.file,
+                      color: controller.selectedIndex.value == 2
+                          ? Colors.white
+                          : Colors.grey),
+                  onPressed: () => controller.selectedIndex.value = 2,
+                ),
+                IconButton(
+                  icon: FaIcon(FontAwesomeIcons.user,
+                      color: controller.selectedIndex.value == 3
+                          ? Colors.white
+                          : Colors.grey),
+                  onPressed: () => controller.selectedIndex.value = 3,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
       body: Obx(() => controller.screens[controller.selectedIndex.value]),
