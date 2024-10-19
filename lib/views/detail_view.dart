@@ -1,8 +1,11 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:travelcustom/utilities/content_filter.dart';
+import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'dart:developer' as devtools show log;
 
 class DetailsPage extends StatefulWidget {
@@ -117,6 +120,56 @@ class _DetailsPageState extends State<DetailsPage> {
       }
     } else {
       // User not logged in
+      devtools.log('User is not logged in');
+    }
+  }
+
+  // Function to add activity to travel plan
+  void _addToPlan() async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId != null) {
+      // Show time picker to select time
+      TimeOfDay? selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (selectedTime != null) {
+        String formattedTime = selectedTime.format(context);
+
+        // Get reference to user's travel plan
+        QuerySnapshot travelPlansSnapshot = await FirebaseFirestore.instance
+            .collection('travel_plans')
+            .where('userId', isEqualTo: userId)
+            .get();
+
+        if (travelPlansSnapshot.docs.isNotEmpty) {
+          DocumentReference travelPlanDocRef =
+              travelPlansSnapshot.docs.first.reference;
+
+          // Add the destination and selected time to activities array
+          travelPlanDocRef.update({
+            'activities': FieldValue.arrayUnion([
+              {'destination': widget.destinationId, 'time': formattedTime}
+            ])
+          }).then((_) {
+            devtools.log('Activity added to travel plan successfully');
+            // Navigate to TravelPlanView after success
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => CustomBottomNavigationBar()),
+              (Route<dynamic> route) => false,
+            );
+          }).catchError((error) {
+            devtools.log('Failed to add activity to travel plan: $error');
+          });
+        } else {
+          devtools.log('No travel plan found for user');
+        }
+      }
+    } else {
       devtools.log('User is not logged in');
     }
   }
@@ -288,6 +341,15 @@ class _DetailsPageState extends State<DetailsPage> {
                           [const Text('-')],
                     ),
                   ],
+                ),
+                const SizedBox(height: 30),
+
+                // Add to Plan button
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _addToPlan,
+                    child: const Text('Add to Plan'),
+                  ),
                 ),
               ],
             ),

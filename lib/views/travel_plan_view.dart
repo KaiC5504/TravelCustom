@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'dart:developer' as devtools show log;
 import 'package:intl/intl.dart';
+import 'package:travelcustom/views/search_view.dart';
 
 class TravelPlanView extends StatefulWidget {
   const TravelPlanView({super.key});
@@ -61,6 +63,15 @@ class _TravelPlanViewState extends State<TravelPlanView> {
             if (planData != null) {
               List<Map<String, dynamic>> fetchedActivities =
                   List<Map<String, dynamic>>.from(planData['activities'] ?? []);
+
+              // Sort the activities by time
+              fetchedActivities.sort((a, b) {
+                int timeAInMinutes =
+                    _convertTimeToMinutes(a['time'] ?? '12:00 AM');
+                int timeBInMinutes =
+                    _convertTimeToMinutes(b['time'] ?? '12:00 AM');
+                return timeAInMinutes.compareTo(timeBInMinutes);
+              });
 
               for (var activity in fetchedActivities) {
                 String destinationId = activity['destination'] ?? '';
@@ -165,11 +176,225 @@ class _TravelPlanViewState extends State<TravelPlanView> {
     }
   }
 
+  int _convertTimeToMinutes(String time) {
+    try {
+      final isPM = time.toLowerCase().contains('pm');
+      final parts = time.split(':');
+      int hour = int.parse(parts[0].trim());
+      int minute = int.parse(parts[1].split(' ')[0].trim());
+
+      if (isPM && hour != 12) {
+        hour += 12;
+      } else if (!isPM && hour == 12) {
+        hour = 0;
+      }
+
+      return hour * 60 + minute;
+    } catch (e) {
+      devtools.log('Error converting time to minutes: $e');
+      return 0;
+    }
+  }
+
+  void _deleteActivity(int index) async {
+    try {
+      String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      if (userId.isEmpty) {
+        devtools.log('User is not logged in');
+        return;
+      }
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        String planId = userDoc['planId'] ?? '';
+        if (planId.isNotEmpty) {
+          Map<String, dynamic> activityToDelete = activities[index];
+          await FirebaseFirestore.instance
+              .collection('travel_plans')
+              .doc(planId)
+              .update({
+            'activities': FieldValue.arrayRemove([activityToDelete])
+          });
+
+          setState(() {
+            activities.removeAt(index);
+          });
+
+          devtools.log('Activity deleted successfully');
+        }
+      }
+    } catch (e) {
+      devtools.log('Error deleting activity: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Trip Detail Plan'),
+        title: Center(
+          child: Text('Travel Plan'),
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: FloatingActionButton(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50),
+          ),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Center(
+                    child: Text(
+                      'Add to Plan',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
+                    ),
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (context) => const SearchPage()),
+                          );
+                        },
+                        child: Text(
+                          'Add Destination',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              TextEditingController destinationController =
+                                  TextEditingController();
+                              TimeOfDay? selectedTime;
+
+                              return AlertDialog(
+                                title: Text(
+                                  'Create Custom Activity',
+                                ),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextField(
+                                      controller: destinationController,
+                                      decoration: InputDecoration(
+                                          labelText: 'Destination'),
+                                    ),
+                                    SizedBox(height: 10),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        selectedTime = await showTimePicker(
+                                          context: context,
+                                          initialTime: TimeOfDay.now(),
+                                        );
+                                        setState(() {});
+                                      },
+                                      child: Text('Select Time'),
+                                    ),
+                                    if (selectedTime != null)
+                                      Text(
+                                          'Selected Time: ${selectedTime!.format(context)}'),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      if (destinationController
+                                              .text.isNotEmpty &&
+                                          selectedTime != null) {
+                                        String destination =
+                                            destinationController.text;
+                                        String time =
+                                            selectedTime!.format(context);
+
+                                        String userId = FirebaseAuth
+                                                .instance.currentUser?.uid ??
+                                            '';
+                                        if (userId.isNotEmpty) {
+                                          FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(userId)
+                                              .get()
+                                              .then(
+                                            (userDoc) {
+                                              if (userDoc.exists) {
+                                                String planId =
+                                                    userDoc['planId'] ?? '';
+                                                if (planId.isNotEmpty) {
+                                                  FirebaseFirestore.instance
+                                                      .collection(
+                                                          'travel_plans')
+                                                      .doc(planId)
+                                                      .update(
+                                                    {
+                                                      'activities':
+                                                          FieldValue.arrayUnion(
+                                                        [
+                                                          {
+                                                            'destination':
+                                                                destination,
+                                                            'time': time
+                                                          }
+                                                        ],
+                                                      )
+                                                    },
+                                                  );
+                                                }
+                                              }
+                                            },
+                                          );
+                                        }
+
+                                        // Add the new custom activity to the activities list
+                                        setState(() {
+                                          activities.add({
+                                            'destination': destination,
+                                            'time': time
+                                          });
+                                        });
+
+                                        Navigator.of(context).pop();
+                                        fetchTravelPlanDetails();
+                                      }
+                                    },
+                                    child: Text('Add Activity'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        child: Text(
+                          'Create Custom Activity',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+          backgroundColor: const Color.fromARGB(255, 135, 139, 227),
+          child: FaIcon(FontAwesomeIcons.plus, color: Colors.white),
+        ),
       ),
       body: Column(
         children: [
@@ -183,7 +408,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
               IconButton(
                 icon: Icon(Icons.add_circle_outline),
                 onPressed: () {
-                  // Add new day functionality can go here
+                  //New day functionality
                 },
               ),
             ],
@@ -192,20 +417,31 @@ class _TravelPlanViewState extends State<TravelPlanView> {
           // Timeline for the selected day
           Expanded(
             child: ListView(
-              children: activities.asMap().map((index, activity) {
-                String activityTime = activity['time'] ?? '';
-                String destinationId = activity['destination'] ?? '';
-                String activityDestination =
-                    destinationNames[destinationId] ?? 'Unknown Destination';
-                return MapEntry(
-                    index,
-                    _buildTimeLineItem(
-                      activityTime,
-                      activityDestination,
-                      Icons.location_on,
-                      isFirst: index == 0,
-                    ));
-              }).values.toList(),
+              children: activities
+                  .asMap()
+                  .map((index, activity) {
+                    String activityTime = activity['time'] ?? '';
+                    String destinationId = activity['destination'] ?? '';
+                    String activityDestination =
+                        destinationNames.containsKey(destinationId)
+                            ? destinationNames[destinationId]!
+                            : destinationId;
+
+                    return MapEntry(
+                        index,
+                        _buildTimeLineItem(
+                          activityTime,
+                          activityDestination,
+                          Icons.location_on,
+                          isFirst: index == 0,
+                          isLast: index == activities.length - 1,
+                          onIconPressed: () {
+                            _deleteActivity(index);
+                          },
+                        ));
+                  })
+                  .values
+                  .toList(),
             ),
           ),
         ],
@@ -238,12 +474,14 @@ class _TravelPlanViewState extends State<TravelPlanView> {
 
   // Timeline Item Builder
   Widget _buildTimeLineItem(String time, String title, IconData icon,
-      {bool isFirst = false, bool isLast = false}) {
+      {bool isFirst = false,
+      bool isLast = false,
+      required VoidCallback onIconPressed}) {
     return SizedBox(
       height: 110,
       child: TimelineTile(
         alignment: TimelineAlign.manual,
-        lineXY: 0.2, // Adjust to position the line between time and activity
+        lineXY: 0.27,
         isFirst: isFirst,
         isLast: isLast,
         indicatorStyle: IndicatorStyle(
@@ -270,8 +508,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
           alignment: Alignment.centerRight,
           width: 80,
           child: Padding(
-            padding:
-                const EdgeInsets.only(right: 10.0), // Increase padding here
+            padding: const EdgeInsets.only(right: 10.0),
             child: Text(
               time,
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -282,13 +519,26 @@ class _TravelPlanViewState extends State<TravelPlanView> {
         //Activity
         endChild: Padding(
           padding: const EdgeInsets.only(left: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close),
+                color: Colors.red,
+                onPressed: onIconPressed,
               ),
             ],
           ),
