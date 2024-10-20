@@ -210,10 +210,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     final SharedPreferences prefs =
                         await SharedPreferences.getInstance();
-                    await prefs.remove('user_name'); // Remove stored data
+                    await prefs.remove('user_name');
 
                     Navigator.of(context).pushNamedAndRemoveUntil(
-                      loginRoute,
+                      naviRoute,
                       (route) => false,
                     );
                   }
@@ -236,19 +236,19 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // User pressed 'Cancel'
+                Navigator.of(context).pop(false);
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true); // User pressed 'Logout'
+                Navigator.of(context).pop(true);
               },
               child: const Text('Logout'),
             ),
           ],
         );
       },
-    ).then((value) => value ?? false); // Default to false if user cancels
+    ).then((value) => value ?? false);
   }
 }
