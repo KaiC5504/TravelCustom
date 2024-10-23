@@ -1,8 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 import 'dart:developer' as devtools show log;
 
 class ProfileEditPage extends StatefulWidget {
@@ -25,8 +29,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   bool _obscurePassword = false;
   String? _currentPassword;
+  File? _imageFile;
+  Uint8List? _avatarBytes;
+  String? _profileImageUrl;
 
-  // Load user data from Firestore
   Future<void> _loadUserData() async {
     try {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
@@ -41,6 +47,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _emailController.text = userData['email'] ?? '';
         _passwordController.text = userData['password'] ?? '';
         _phoneController.text = userData['phone'] ?? '';
+        _profileImageUrl = userData['profileImageUrl'] ?? '';
+
+        if (_profileImageUrl != null) {
+          _avatarBytes = await getAvatarUrlForProfile(_profileImageUrl!);
+          setState(() {});
+        }
 
         _currentPassword = _passwordController.text;
       }
@@ -55,6 +67,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (_formKey.currentState?.validate() ?? false) {
       try {
         if (userId != null) {
+          //Upload profile image if selected
+          if (_imageFile != null) {
+            String uniqueFileName = '$userId.png';
+            final storageRef = FirebaseStorage.instance
+                .ref()
+                .child('profile_pictures/$uniqueFileName');
+            await storageRef.putFile(_imageFile!);
+            _profileImageUrl = uniqueFileName;
+          }
           //Update user profile
           await FirebaseFirestore.instance
               .collection('users')
@@ -65,6 +86,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             'name': _nameController.text,
             'username': _usernameController.text,
             'password': _passwordController.text,
+            'profileImageUrl': _profileImageUrl,
           });
 
           //Update password if changed
@@ -102,6 +124,32 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures/$imageFileName');
+      Uint8List? imageBytes = await ref.getData(100000000);
+      if (imageBytes == null) {
+        throw Exception('Failed to load image');
+      }
+      return imageBytes;
+    } catch (e) {
+      devtools.log('Error fetching image: $e');
+      rethrow;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -134,25 +182,35 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.grey[300],
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.black,
-                      ),
+                      backgroundImage: _imageFile != null
+                          ? FileImage(_imageFile!)
+                          : (_avatarBytes != null
+                              ? MemoryImage(_avatarBytes!)
+                              : null) as ImageProvider?,
+                      child: _imageFile == null && _avatarBytes == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.black,
+                            )
+                          : null,
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.camera_alt,
-                          color: Colors.grey[700],
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          height: 40,
+                          width: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ),
                     ),
