@@ -1,13 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'dart:developer' as devtools show log;
+import 'package:travelcustom/utilities/profile_logic.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({super.key});
@@ -33,96 +31,116 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   Uint8List? _avatarBytes;
   String? _profileImageUrl;
 
-  Future<void> _loadUserData() async {
-    try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-
-      if (userDoc.exists) {
-        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-        _nameController.text = userData['name'] ?? '';
-        _usernameController.text = userData['username'] ?? '';
-        _emailController.text = userData['email'] ?? '';
-        _passwordController.text = userData['password'] ?? '';
-        _phoneController.text = userData['phone'] ?? '';
-        _profileImageUrl = userData['profileImageUrl'] ?? '';
-
-        if (_profileImageUrl != null) {
-          _avatarBytes = await getAvatarUrlForProfile(_profileImageUrl!);
-          setState(() {});
-        }
-
-        _currentPassword = _passwordController.text;
-      }
-    } catch (e) {
-      devtools.log('Error fetching user data: $e');
-    }
+  @override
+  void initState() {
+    super.initState();
+    UserProfileMethods.loadUserData(
+      userId: userId,
+      onDataLoaded: (name, username, email, password, phone, profileImageUrl,
+          avatarBytes) {
+        setState(() {
+          _nameController.text = name;
+          _usernameController.text = username;
+          _emailController.text = email;
+          _passwordController.text = password;
+          _phoneController.text = phone;
+          _profileImageUrl = profileImageUrl;
+          _avatarBytes = avatarBytes;
+          _currentPassword = password;
+        });
+      },
+    );
   }
 
-  // Save updated user data back to Firestore
-  Future<void> _saveUserData() async {
-    // Check if form validation passes
-    if (_formKey.currentState?.validate() ?? false) {
-      try {
-        if (userId != null) {
-          //Upload profile image if selected
-          if (_imageFile != null) {
-            String uniqueFileName = '$userId.png';
-            final storageRef = FirebaseStorage.instance
-                .ref()
-                .child('profile_pictures/$uniqueFileName');
-            await storageRef.putFile(_imageFile!);
-            _profileImageUrl = uniqueFileName;
-          }
-          //Update user profile
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .update({
-            'email': _emailController.text,
-            'phone': _phoneController.text,
-            'name': _nameController.text,
-            'username': _usernameController.text,
-            'password': _passwordController.text,
-            'profileImageUrl': _profileImageUrl,
-          });
+  // Future<void> _loadUserData() async {
+  //   try {
+  //     DocumentSnapshot userDoc = await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(userId)
+  //         .get();
 
-          //Update password if changed
-          if (_passwordController.text != _currentPassword) {
-            User? user = FirebaseAuth.instance.currentUser;
-            if (user != null) {
-              await user.updatePassword(_passwordController.text);
-              devtools.log('Password updated successfully');
-            }
-          } else {
-            devtools.log('Password not updated');
-          }
+  //     if (userDoc.exists) {
+  //       Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+  //       _nameController.text = userData['name'] ?? '';
+  //       _usernameController.text = userData['username'] ?? '';
+  //       _emailController.text = userData['email'] ?? '';
+  //       _passwordController.text = userData['password'] ?? '';
+  //       _phoneController.text = userData['phone'] ?? '';
+  //       _profileImageUrl = userData['profileImageUrl'] ?? '';
 
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Profile updated successfully!')),
-          );
-          Navigator.pop(context, true);
-        } else {
-          throw Exception("User ID is null. The user might not be logged in.");
-        }
-      } catch (e) {
-        devtools.log('Error updating profile: $e');
+  //       if (_profileImageUrl != null) {
+  //         _avatarBytes = await getAvatarUrlForProfile(_profileImageUrl!);
+  //         setState(() {});
+  //       }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Failed to update profile. Please try again.')),
-        );
-      }
-    } else {
-      // If validation fails, display a message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please correct the errors in the form.')),
-      );
-    }
-  }
+  //       _currentPassword = _passwordController.text;
+  //     }
+  //   } catch (e) {
+  //     devtools.log('Error fetching user data: $e');
+  //   }
+  // }
+
+  // Future<void> _saveUserData() async {
+  //   // Check if form validation passes
+  //   if (_formKey.currentState?.validate() ?? false) {
+  //     try {
+  //       if (userId != null) {
+  //         //Upload profile image if selected
+  //         if (_imageFile != null) {
+  //           String uniqueFileName = '$userId.png';
+  //           final storageRef = FirebaseStorage.instance
+  //               .ref()
+  //               .child('profile_pictures/$uniqueFileName');
+  //           await storageRef.putFile(_imageFile!);
+  //           _profileImageUrl = uniqueFileName;
+  //         }
+  //         //Update user profile
+  //         await FirebaseFirestore.instance
+  //             .collection('users')
+  //             .doc(userId)
+  //             .update({
+  //           'email': _emailController.text,
+  //           'phone': _phoneController.text,
+  //           'name': _nameController.text,
+  //           'username': _usernameController.text,
+  //           'password': _passwordController.text,
+  //           'profileImageUrl': _profileImageUrl,
+  //         });
+
+  //         //Update password if changed
+  //         if (_passwordController.text != _currentPassword) {
+  //           User? user = FirebaseAuth.instance.currentUser;
+  //           if (user != null) {
+  //             await user.updatePassword(_passwordController.text);
+  //             devtools.log('Password updated successfully');
+  //           }
+  //         } else {
+  //           devtools.log('Password not updated');
+  //         }
+
+  //         // Show success message
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(content: Text('Profile updated successfully!')),
+  //         );
+  //         Navigator.pop(context, true);
+  //       } else {
+  //         throw Exception("User ID is null. The user might not be logged in.");
+  //       }
+  //     } catch (e) {
+  //       devtools.log('Error updating profile: $e');
+
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //             content: Text('Failed to update profile. Please try again.')),
+  //       );
+  //     }
+  //   } else {
+  //     // If validation fails, display a message
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Please correct the errors in the form.')),
+  //     );
+  //   }
+  // }
 
   Future<void> _pickImage() async {
     final pickedFile =
@@ -134,27 +152,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-  Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
-    try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('profile_pictures/$imageFileName');
-      Uint8List? imageBytes = await ref.getData(100000000);
-      if (imageBytes == null) {
-        throw Exception('Failed to load image');
-      }
-      return imageBytes;
-    } catch (e) {
-      devtools.log('Error fetching image: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
+  // Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
+  //   try {
+  //     final ref = FirebaseStorage.instance
+  //         .ref()
+  //         .child('profile_pictures/$imageFileName');
+  //     Uint8List? imageBytes = await ref.getData(100000000);
+  //     if (imageBytes == null) {
+  //       throw Exception('Failed to load image');
+  //     }
+  //     return imageBytes;
+  //   } catch (e) {
+  //     devtools.log('Error fetching image: $e');
+  //     rethrow;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -217,21 +229,19 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 20),
 
               _buildProfileField("NAME", _nameController, false),
-
               const SizedBox(height: 16),
 
               _buildProfileField("USERNAME", _usernameController, false),
               const SizedBox(height: 16),
 
               _buildProfileField("YOUR EMAIL", _emailController, false),
-
               const SizedBox(height: 16),
 
               _buildPasswordField(),
-
               const SizedBox(height: 16),
 
               _buildProfileField("YOUR PHONE", _phoneController, false),
@@ -239,7 +249,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               const SizedBox(height: 20),
 
               ElevatedButton(
-                onPressed: _saveUserData,
+                onPressed: () async {
+                  await UserProfileMethods.saveUserData(
+                    userId: userId,
+                    context: context,
+                    formKey: _formKey,
+                    name: _nameController.text,
+                    username: _usernameController.text,
+                    email: _emailController.text,
+                    password: _passwordController.text,
+                    phone: _phoneController.text,
+                    currentPassword: _currentPassword,
+                    imageFile: _imageFile,
+                  );
+                },
                 child: Text('Save Changes'),
               ),
             ],
