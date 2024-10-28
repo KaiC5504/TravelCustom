@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -11,8 +11,7 @@ import 'dart:developer' as devtools show log;
 class UserProfileMethods {
   static Future<void> loadUserData({
     required String? userId,
-    required Function(
-            String, String, String, String, String, String?, Uint8List?)
+    required Function(String, String, String, String, String, Uint8List?)
         onDataLoaded,
   }) async {
     if (userId == null) {
@@ -33,15 +32,10 @@ class UserProfileMethods {
         String email = userData['email'] ?? '';
         String password = userData['password'] ?? '';
         String phone = userData['phone'] ?? '';
-        String? profileImageUrl = userData['profileImageUrl'];
-        Uint8List? avatarBytes;
 
-        if (profileImageUrl != null) {
-          avatarBytes = await getAvatarUrlForProfile(profileImageUrl);
-        }
+        Uint8List? avatarBytes = await getAvatarForProfile(userId);
 
-        onDataLoaded(name, username, email, password, phone, profileImageUrl,
-            avatarBytes);
+        onDataLoaded(name, username, email, password, phone, avatarBytes);
       }
     } catch (e) {
       devtools.log('Error fetching user data: $e');
@@ -58,6 +52,7 @@ class UserProfileMethods {
     required String password,
     required String phone,
     String? currentPassword,
+    String? currentEmail,
     File? imageFile,
   }) async {
     if (!(formKey.currentState?.validate() ?? false)) {
@@ -73,14 +68,52 @@ class UserProfileMethods {
     }
 
     try {
-      String? profileImageUrl;
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null && user.email != email && email != currentEmail) {
+        try {
+          await user.updateEmail(email);
+          devtools
+              .log('Verification email sent to update email in Firebase Auth');
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'requires-recent-login') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Please reauthenticate to change email.')),
+            );
+            return;
+          } else {
+            devtools.log('Error updating email: ${e.message}');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to update email.')),
+            );
+            return;
+          }
+        }
+      }
+
+      if (user != null && password != currentPassword) {
+        try {
+          await user.updatePassword(password);
+          devtools.log('Password updated successfully');
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'requires-recent-login') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text('Please reauthenticate to change password.')),
+            );
+          } else {
+            devtools.log('Error updating password: ${e.message}');
+          }
+          return; // Exit if password update fails
+        }
+      }
+
       if (imageFile != null) {
         String uniqueFileName = '$userId.png';
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('profile_pictures/$uniqueFileName');
         await storageRef.putFile(imageFile);
-        profileImageUrl = uniqueFileName;
       }
 
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
@@ -89,16 +122,7 @@ class UserProfileMethods {
         'name': name,
         'username': username,
         'password': password,
-        'profileImageUrl': profileImageUrl,
       });
-
-      if (password != currentPassword) {
-        User? user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          await user.updatePassword(password);
-          devtools.log('Password updated successfully');
-        }
-      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,19 +147,16 @@ class UserProfileMethods {
     }
   }
 
-  static Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
+  static Future<Uint8List?> getAvatarForProfile(String userId) async {
     try {
       final ref = FirebaseStorage.instance
           .ref()
-          .child('profile_pictures/$imageFileName');
+          .child('profile_pictures/$userId.png'); // Fetch based on user ID
       Uint8List? imageBytes = await ref.getData(100000000);
-      if (imageBytes == null) {
-        throw Exception('Failed to load image');
-      }
       return imageBytes;
     } catch (e) {
       devtools.log('Error fetching image: $e');
-      rethrow;
+      return null;
     }
   }
 }
