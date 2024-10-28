@@ -1,7 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +22,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String? name;
+  String? profileImageUrl;
+  Uint8List? avatarBytes;
   bool isLoading = true;
 
   // Fetch user data from Firestore and save locally
@@ -34,7 +39,12 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() {
           name = userDoc['name'];
+          profileImageUrl = userDoc['profileImageUrl'];
         });
+        if (profileImageUrl != null) {
+          avatarBytes = await getAvatarUrlForProfile(profileImageUrl!);
+          setState(() {}); // Refresh UI after loading avatar bytes
+        }
       }
     }
   }
@@ -50,6 +60,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> refreshProfileData() async {
     await fetchUserData(); // Save name to local storage
+  }
+
+  Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures/$imageFileName');
+      Uint8List? imageBytes = await ref.getData(100000000);
+      if (imageBytes == null) {
+        throw Exception('Failed to load image');
+      }
+      return imageBytes;
+    } catch (e) {
+      devtools.log('Error fetching image: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -139,11 +165,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.grey[300],
-                  child: const Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Colors.black,
-                  ),
+                  backgroundImage:
+                      avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                  child: avatarBytes == null
+                      ? const Icon(
+                          Icons.person,
+                          size: 60,
+                          color: Colors.black,
+                        )
+                      : null,
                 ),
               ),
 
@@ -170,7 +200,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         builder: (context) => const ProfileEditPage()),
                   );
 
-                  if (result == true) { 
+                  if (result == true) {
                     await refreshProfileData(); // Refresh data after editing
                   }
                 },
@@ -210,10 +240,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     final SharedPreferences prefs =
                         await SharedPreferences.getInstance();
-                    await prefs.remove('user_name'); // Remove stored data
+                    await prefs.remove('user_name');
 
                     Navigator.of(context).pushNamedAndRemoveUntil(
-                      loginRoute,
+                      naviRoute,
                       (route) => false,
                     );
                   }
@@ -236,19 +266,19 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // User pressed 'Cancel'
+                Navigator.of(context).pop(false);
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true); // User pressed 'Logout'
+                Navigator.of(context).pop(true);
               },
               child: const Text('Logout'),
             ),
           ],
         );
       },
-    ).then((value) => value ?? false); // Default to false if user cancels
+    ).then((value) => value ?? false);
   }
 }

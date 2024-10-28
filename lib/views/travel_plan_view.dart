@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -232,6 +234,44 @@ class _TravelPlanViewState extends State<TravelPlanView> {
     }
   }
 
+  void _handleDeleteActivity(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(child: Text('Delete Activity')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    icon: Icon(Icons.cancel, color: Colors.black),
+                    label:
+                        Text('Cancel', style: TextStyle(color: Colors.black)),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  TextButton.icon(
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    label: Text('Delete', style: TextStyle(color: Colors.red)),
+                    onPressed: () {
+                      _deleteActivity(index);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -403,8 +443,6 @@ class _TravelPlanViewState extends State<TravelPlanView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildDayButton(1, startDate),
-              SizedBox(width: 10),
-              _buildDayButton(2, endDate),
               IconButton(
                 icon: Icon(Icons.add_circle_outline),
                 onPressed: () {
@@ -429,15 +467,17 @@ class _TravelPlanViewState extends State<TravelPlanView> {
 
                     return MapEntry(
                         index,
-                        _buildTimeLineItem(
-                          activityTime,
-                          activityDestination,
-                          Icons.location_on,
-                          isFirst: index == 0,
-                          isLast: index == activities.length - 1,
-                          onIconPressed: () {
-                            _deleteActivity(index);
+                        GestureDetector(
+                          onLongPress: () {
+                            _handleDeleteActivity(index);
                           },
+                          child: _buildTimeLineItem(
+                            activityTime,
+                            activityDestination,
+                            Icons.location_on,
+                            isFirst: index == 0,
+                            isLast: index == activities.length - 1,
+                          ),
                         ));
                   })
                   .values
@@ -474,9 +514,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
 
   // Timeline Item Builder
   Widget _buildTimeLineItem(String time, String title, IconData icon,
-      {bool isFirst = false,
-      bool isLast = false,
-      required VoidCallback onIconPressed}) {
+      {bool isFirst = false, bool isLast = false}) {
     return LayoutBuilder(
       builder: (context, constraints) {
         double screenWidth = MediaQuery.of(context).size.width;
@@ -495,15 +533,15 @@ class _TravelPlanViewState extends State<TravelPlanView> {
           }
         } else {
           if (screenWidth >= 448) {
-            lineXY = 0.27; 
+            lineXY = 0.27;
           } else if (screenWidth >= 426) {
-            lineXY = 0.28; 
+            lineXY = 0.28;
           } else if (screenWidth >= 412) {
-            lineXY = 0.29; 
+            lineXY = 0.29;
           } else if (screenWidth >= 350) {
-            lineXY = 0.35;
+            lineXY = 0.33;
           } else {
-            lineXY = 0.45; 
+            lineXY = 0.45;
           }
         }
 
@@ -564,11 +602,6 @@ class _TravelPlanViewState extends State<TravelPlanView> {
                         ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close),
-                    color: Colors.red,
-                    onPressed: onIconPressed,
                   ),
                 ],
               ),
