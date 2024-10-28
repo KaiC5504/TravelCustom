@@ -61,14 +61,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Crop Image',
+            cropStyle: CropStyle.circle,
             toolbarColor: Colors.deepPurple,
             toolbarWidgetColor: Colors.white,
             hideBottomControls: true,
             lockAspectRatio:
-                true, // Lock to a square or set custom aspect ratio
+                true, 
           ),
           IOSUiSettings(
             title: 'Crop Image',
+            cropStyle: CropStyle.circle,
             minimumAspectRatio: 1.0,
           ),
         ],
