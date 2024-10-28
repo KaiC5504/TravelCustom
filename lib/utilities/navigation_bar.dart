@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
+import 'package:travelcustom/views/platform_page.dart';
 import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
 import 'package:travelcustom/views/travel_plan_view.dart';
@@ -81,9 +82,7 @@ class NavigationController extends GetxController {
   final screens = [
     const TravelView(),
     const TravelPlanView(),
-    Container(
-      color: Colors.white,
-    ),
+    const PlatformPage(),
     const ProfilePage(),
   ];
 }
