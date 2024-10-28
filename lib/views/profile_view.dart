@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -107,10 +106,11 @@ class _ProfilePageState extends State<ProfilePage> {
             'Profile',
             style: TextStyle(color: Colors.black),
           ),
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.grey[200],
           elevation: 0,
           centerTitle: true,
         ),
+        backgroundColor: Colors.grey[200],
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -149,10 +149,11 @@ class _ProfilePageState extends State<ProfilePage> {
             'Profile',
             style: TextStyle(color: Colors.black),
           ),
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.grey[200],
           elevation: 0,
           centerTitle: true,
         ),
+        backgroundColor: Colors.grey[200],
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
@@ -195,6 +196,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
               // Edit Profile Button
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      const Color.fromARGB(255, 114, 114, 114), // Text color
+                  side: const BorderSide(
+                      color: Color.fromARGB(255, 77, 77, 77), // Border color
+                      width: 2.0), // Increased border width
+                ),
                 onPressed: () async {
                   final result = await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -205,7 +214,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     await refreshProfileData(); // Refresh data after editing
                   }
                 },
-                child: const Text('Edit Profile'),
+                child: const Text(
+                  'Edit Profile',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
 
               const SizedBox(height: 30),

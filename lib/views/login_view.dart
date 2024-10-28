@@ -58,6 +58,7 @@ class _LoginViewState extends State<LoginView> {
         title: const Text('Login', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 162, 136, 222),
       ),
+      backgroundColor: Colors.grey[200],
       body: Column(
         children: [
           Center(

@@ -92,10 +92,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           'Edit Profile',
           style: TextStyle(color: Colors.black),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.grey[200],
         elevation: 0,
         centerTitle: true,
       ),
+      backgroundColor: Colors.grey[200],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(

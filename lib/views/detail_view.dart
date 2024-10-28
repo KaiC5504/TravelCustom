@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:typed_data';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,6 +24,7 @@ class DetailsPage extends StatefulWidget {
 class _DetailsPageState extends State<DetailsPage> {
   bool _isFavourited = false;
   bool _interactionRecorded = false;
+  Map<String, Uint8List?> destinationImages = {};
 
   @override
   void initState() {
@@ -84,10 +87,38 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 
   Future<DocumentSnapshot> _getDestinationDetails() async {
-    return FirebaseFirestore.instance
-        .collection('destinations')
-        .doc(widget.destinationId)
-        .get();
+    try {
+      // Fetch the destination details
+      DocumentSnapshot destinationDoc = await FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(widget.destinationId)
+          .get();
+
+      if (destinationDoc.exists) {
+        // Fetch destination image from Firebase Storage
+        Uint8List? destinationImageBytes;
+        try {
+          final ref = FirebaseStorage.instance
+              .ref()
+              .child('destination_images/${widget.destinationId}.png');
+          destinationImageBytes = await ref.getData(100000000);
+          destinationImages[widget.destinationId] = destinationImageBytes;
+        } catch (e) {
+          if (e is FirebaseException && e.code == 'object-not-found') {
+            devtools.log(
+                'No destination image found for ${widget.destinationId}, using default image.');
+          } else {
+            devtools
+                .log('Error fetching image for ${widget.destinationId}: $e');
+          }
+        }
+      }
+
+      return destinationDoc;
+    } catch (e) {
+      devtools.log('Error fetching destination details: $e');
+      rethrow;
+    }
   }
 
   void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
@@ -162,7 +193,9 @@ class _DetailsPageState extends State<DetailsPage> {
       appBar: AppBar(
         title: const Text('Destination Details'),
         centerTitle: true,
+        backgroundColor: Colors.grey[200],
       ),
+      backgroundColor: Colors.grey[200],
       body: FutureBuilder<DocumentSnapshot>(
         future: _getDestinationDetails(),
         builder: (context, snapshot) {
@@ -197,10 +230,11 @@ class _DetailsPageState extends State<DetailsPage> {
                   height: 200,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
-                    image: destinationData['images'] != null &&
-                            (destinationData['images'] as List).isNotEmpty
+                    color: Colors.grey[200],
+                    image: destinationImages[widget.destinationId] != null
                         ? DecorationImage(
-                            image: NetworkImage(destinationData['images'][0]),
+                            image: MemoryImage(
+                                destinationImages[widget.destinationId]!),
                             fit: BoxFit.cover,
                           )
                         : null,

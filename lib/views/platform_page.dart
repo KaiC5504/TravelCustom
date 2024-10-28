@@ -1,10 +1,105 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
+import 'package:timeago/timeago.dart' as timeago;
 import 'dart:developer' as devtools show log;
 
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:travelcustom/views/detail_view.dart';
 
-class PlatformPage extends StatelessWidget {
+class PlatformPage extends StatefulWidget {
   const PlatformPage({super.key});
+
+  @override
+  State<PlatformPage> createState() => _PlatformPageState();
+}
+
+class _PlatformPageState extends State<PlatformPage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  // Store combined data
+  List<Map<String, dynamic>> combinedPosts = [];
+  Map<String, Uint8List?> profilePictures = {};
+  Map<String, Uint8List?> destinationImages = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  // Fetch destination and user data
+  Future<void> _fetchPosts() async {
+    try {
+      QuerySnapshot destinationSnapshot = await _firestore
+          .collection('destinations')
+          .orderBy('post_date', descending: true)
+          .get();
+
+      for (var destinationDoc in destinationSnapshot.docs) {
+        var destinationData = destinationDoc.data() as Map<String, dynamic>;
+        String userId = destinationData['author'];
+
+        // Fetch user details based on the author field
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(userId).get();
+        var userData = userDoc.data() as Map<String, dynamic>;
+
+        // Fetch profile pictures
+        Uint8List? profileBytes;
+        try {
+          final ref = _storage.ref().child('profile_pictures/$userId.png');
+          profileBytes = await ref.getData(100000000);
+        } catch (e) {
+          if (e is FirebaseException && e.code == 'object-not-found') {
+            devtools.log(
+                'No profile picture found for user $userId, using default picture.');
+          } else {
+            devtools.log('Error fetching picture for user $userId: $e');
+          }
+        }
+
+        // Cache the profile picture
+        profilePictures[userId] = profileBytes;
+
+        //Fetch destination images
+        Uint8List? destinationBytes;
+        try {
+          final ref = _storage
+              .ref()
+              .child('destination_images/${destinationDoc.id}.png');
+          destinationBytes = await ref.getData(100000000);
+        } catch (e) {
+          if (e is FirebaseException && e.code == 'object-not-found') {
+            devtools.log(
+                'No destination image found for destination ${destinationDoc.id}, using default image.');
+          } else {
+            devtools.log(
+                'Error fetching image for destination ${destinationDoc.id}: $e');
+          }
+        }
+
+        // Cache the destination image
+        destinationImages[destinationDoc.id] = destinationBytes;
+
+        // Combine destination and user data
+        combinedPosts.add({
+          'destinationId': destinationDoc.id,
+          'authorName': userData['name'],
+          'authorId': userId,
+          'destination': destinationData['destination'],
+          'averageRating': destinationData['average_rating'],
+          'postDate': destinationData['post_date'] ?? Timestamp.now(),
+        });
+      }
+
+      setState(() {});
+    } catch (e) {
+      devtools.log('Error fetching posts: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,85 +114,116 @@ class PlatformPage extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           // Main content: List of posts
-          ListView.builder(
-            itemCount: 10, // Placeholder for number of posts
-            itemBuilder: (context, index) {
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15.0),
-                  child: Material(
-                    color: Colors.white,
-                    child: InkWell(
-                      onTap: () {
-                        devtools.log('Post $index tapped');
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  child: Icon(Icons.person),
-                                ),
-                                SizedBox(width: 10.0),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Name',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
+
+          combinedPosts.isEmpty
+              ? Center(
+                  child: CircularProgressIndicator(),
+                )
+              : ListView.builder(
+                  itemCount: combinedPosts.length,
+                  itemBuilder: (context, index) {
+                    var post = combinedPosts[index];
+                    Uint8List? profilePicture =
+                        profilePictures[post['authorId']];
+                    String timeAgo = timeago
+                        .format((post['postDate'] as Timestamp).toDate());
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15.0),
+                        child: Material(
+                          color: Colors.white,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => DetailsPage(
+                                      destinationId: post['destinationId'])));
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundImage: profilePicture != null
+                                            ? MemoryImage(profilePicture)
+                                            : null,
+                                        child: profilePicture == null
+                                            ? Icon(Icons.person)
+                                            : null,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                Spacer(),
-                                Text(
-                                  'How Long Ago',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12.0,
+                                      SizedBox(width: 10.0),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            post['authorName'],
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Spacer(),
+                                      Text(
+                                        timeAgo,
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12.0,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 16.0),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Destination Name',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16.0,
+                                  SizedBox(height: 16.0),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        post['destination'],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16.0,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8.0),
+                                      destinationImages[
+                                                  post['destinationId']] !=
+                                              null
+                                          ? Image.memory(
+                                              destinationImages[
+                                                  post['destinationId']]!,
+                                              height: 200.0,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Container(
+                                              height: 200.0,
+                                              width: double.infinity,
+                                              color: Colors.grey[200],
+                                              child: Icon(Icons.error,
+                                                  color: Colors.red),
+                                            ),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(height: 8.0),
-                                Image.network(
-                                  'https://cdn.britannica.com/49/102749-050-B4874C95/Kuala-Lumpur-Malaysia.jpg',
-                                  height: 200.0,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ],
+                                  SizedBox(height: 16.0),
+                                ],
+                              ),
                             ),
-                            SizedBox(height: 16.0),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          // Floating Action Button at the bottom center
+
+          // Add button
           Positioned(
-            bottom: 0, // Adjust to control overlap
+            bottom: 0,
             left: MediaQuery.of(context).size.width / 2 - 140 / 2,
             child: Material(
               color: Color.fromARGB(255, 56, 56, 56),

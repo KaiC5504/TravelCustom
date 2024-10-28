@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer' as devtools show log;
 import 'package:travelcustom/views/detail_view.dart';
+import 'dart:developer' as devtools show log;
 
 class FavouritePage extends StatefulWidget {
   const FavouritePage({super.key});
@@ -13,6 +16,8 @@ class FavouritePage extends StatefulWidget {
 
 class _FavouritePageState extends State<FavouritePage> {
   late Future<List<Map<String, dynamic>>> _favouritesFuture;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  Map<String, Uint8List?> destinationImages = {};
 
   @override
   void initState() {
@@ -50,7 +55,22 @@ class _FavouritePageState extends State<FavouritePage> {
           if (destinationDoc.exists) {
             Map<String, dynamic> destinationData =
                 destinationDoc.data() as Map<String, dynamic>;
-            destinationData['id'] = destinationDoc.id; // Use document ID
+            destinationData['id'] = destinationDoc.id;
+
+            try {
+              final ref =
+                  _storage.ref().child('destination_images/$destinationId.png');
+              Uint8List? destinationImageBytes = await ref.getData(100000000);
+              destinationImages[destinationId] = destinationImageBytes;
+            } catch (e) {
+              if (e is FirebaseException && e.code == 'object-not-found') {
+                devtools.log(
+                    'No destination image found for $destinationId, using default image.');
+              } else {
+                devtools.log('Error fetching image for $destinationId: $e');
+              }
+            }
+
             favouriteDestinations.add(destinationData);
           }
         }
@@ -67,7 +87,9 @@ class _FavouritePageState extends State<FavouritePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('My Favourites'),
+        backgroundColor: Colors.grey[200],
       ),
+      backgroundColor: Colors.grey[200],
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _favouritesFuture,
         builder: (context, snapshot) {
@@ -89,6 +111,8 @@ class _FavouritePageState extends State<FavouritePage> {
               itemCount: favourites.length,
               itemBuilder: (context, index) {
                 var destination = favourites[index];
+                String destinationId = destination['id'];
+                Uint8List? destinationImage = destinationImages[destinationId];
 
                 return GestureDetector(
                   onTap: () async {
@@ -96,7 +120,7 @@ class _FavouritePageState extends State<FavouritePage> {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => DetailsPage(
-                          destinationId: destination['id'],
+                          destinationId: destinationId,
                         ),
                       ),
                     );
@@ -112,9 +136,10 @@ class _FavouritePageState extends State<FavouritePage> {
                       height: 200,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        image: destination['images'] != null
+                        color: Colors.grey[200],
+                        image: destinationImage != null
                             ? DecorationImage(
-                                image: NetworkImage(destination['images'][0]),
+                                image: MemoryImage(destinationImage),
                                 fit: BoxFit.cover,
                                 colorFilter: ColorFilter.mode(
                                   Colors.black.withOpacity(0.4),

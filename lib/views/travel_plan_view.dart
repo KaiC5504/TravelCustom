@@ -282,7 +282,9 @@ class _TravelPlanViewState extends State<TravelPlanView> {
         title: Center(
           child: Text('Travel Plan'),
         ),
+        backgroundColor: Colors.grey[200],
       ),
+      backgroundColor: Colors.grey[200],
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 20.0),
         child: FloatingActionButton(
