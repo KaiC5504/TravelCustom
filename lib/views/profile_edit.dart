@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:travelcustom/utilities/profile_logic.dart';
@@ -29,22 +30,19 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _currentPassword;
   File? _imageFile;
   Uint8List? _avatarBytes;
-  String? _profileImageUrl;
 
   @override
   void initState() {
     super.initState();
     UserProfileMethods.loadUserData(
       userId: userId,
-      onDataLoaded: (name, username, email, password, phone, profileImageUrl,
-          avatarBytes) {
+      onDataLoaded: (name, username, email, password, phone, avatarBytes) {
         setState(() {
           _nameController.text = name;
           _usernameController.text = username;
           _emailController.text = email;
           _passwordController.text = password;
           _phoneController.text = phone;
-          _profileImageUrl = profileImageUrl;
           _avatarBytes = avatarBytes;
           _currentPassword = password;
         });
@@ -52,121 +50,37 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     );
   }
 
-  // Future<void> _loadUserData() async {
-  //   try {
-  //     DocumentSnapshot userDoc = await FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(userId)
-  //         .get();
-
-  //     if (userDoc.exists) {
-  //       Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-  //       _nameController.text = userData['name'] ?? '';
-  //       _usernameController.text = userData['username'] ?? '';
-  //       _emailController.text = userData['email'] ?? '';
-  //       _passwordController.text = userData['password'] ?? '';
-  //       _phoneController.text = userData['phone'] ?? '';
-  //       _profileImageUrl = userData['profileImageUrl'] ?? '';
-
-  //       if (_profileImageUrl != null) {
-  //         _avatarBytes = await getAvatarUrlForProfile(_profileImageUrl!);
-  //         setState(() {});
-  //       }
-
-  //       _currentPassword = _passwordController.text;
-  //     }
-  //   } catch (e) {
-  //     devtools.log('Error fetching user data: $e');
-  //   }
-  // }
-
-  // Future<void> _saveUserData() async {
-  //   // Check if form validation passes
-  //   if (_formKey.currentState?.validate() ?? false) {
-  //     try {
-  //       if (userId != null) {
-  //         //Upload profile image if selected
-  //         if (_imageFile != null) {
-  //           String uniqueFileName = '$userId.png';
-  //           final storageRef = FirebaseStorage.instance
-  //               .ref()
-  //               .child('profile_pictures/$uniqueFileName');
-  //           await storageRef.putFile(_imageFile!);
-  //           _profileImageUrl = uniqueFileName;
-  //         }
-  //         //Update user profile
-  //         await FirebaseFirestore.instance
-  //             .collection('users')
-  //             .doc(userId)
-  //             .update({
-  //           'email': _emailController.text,
-  //           'phone': _phoneController.text,
-  //           'name': _nameController.text,
-  //           'username': _usernameController.text,
-  //           'password': _passwordController.text,
-  //           'profileImageUrl': _profileImageUrl,
-  //         });
-
-  //         //Update password if changed
-  //         if (_passwordController.text != _currentPassword) {
-  //           User? user = FirebaseAuth.instance.currentUser;
-  //           if (user != null) {
-  //             await user.updatePassword(_passwordController.text);
-  //             devtools.log('Password updated successfully');
-  //           }
-  //         } else {
-  //           devtools.log('Password not updated');
-  //         }
-
-  //         // Show success message
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(content: Text('Profile updated successfully!')),
-  //         );
-  //         Navigator.pop(context, true);
-  //       } else {
-  //         throw Exception("User ID is null. The user might not be logged in.");
-  //       }
-  //     } catch (e) {
-  //       devtools.log('Error updating profile: $e');
-
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //             content: Text('Failed to update profile. Please try again.')),
-  //       );
-  //     }
-  //   } else {
-  //     // If validation fails, display a message
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Please correct the errors in the form.')),
-  //     );
-  //   }
-  // }
-
   Future<void> _pickImage() async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
+
     if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+      // Crop the selected image using ImageCropper
+      CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Colors.deepPurple,
+            toolbarWidgetColor: Colors.white,
+            hideBottomControls: true,
+            lockAspectRatio:
+                true, // Lock to a square or set custom aspect ratio
+          ),
+          IOSUiSettings(
+            title: 'Crop Image',
+            minimumAspectRatio: 1.0,
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        setState(() {
+          _imageFile = File(croppedFile.path); // Save the cropped image
+        });
+      }
     }
   }
-
-  // Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
-  //   try {
-  //     final ref = FirebaseStorage.instance
-  //         .ref()
-  //         .child('profile_pictures/$imageFileName');
-  //     Uint8List? imageBytes = await ref.getData(100000000);
-  //     if (imageBytes == null) {
-  //       throw Exception('Failed to load image');
-  //     }
-  //     return imageBytes;
-  //   } catch (e) {
-  //     devtools.log('Error fetching image: $e');
-  //     rethrow;
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {

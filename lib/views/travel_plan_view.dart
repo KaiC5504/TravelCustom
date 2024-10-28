@@ -92,16 +92,18 @@ class _TravelPlanViewState extends State<TravelPlanView> {
                 }
               }
 
-              setState(() {
-                planName = planData['planName'] ?? '';
-                Timestamp startTimestamp = planData['start'] ?? Timestamp.now();
-                Timestamp endTimestamp = planData['end'] ?? Timestamp.now();
-                startDate =
+                if (mounted) {
+                setState(() {
+                  planName = planData['planName'] ?? '';
+                  Timestamp startTimestamp = planData['start'] ?? Timestamp.now();
+                  Timestamp endTimestamp = planData['end'] ?? Timestamp.now();
+                  startDate =
                     DateFormat('dd-MM-yyyy').format(startTimestamp.toDate());
-                endDate =
+                  endDate =
                     DateFormat('dd-MM-yyyy').format(endTimestamp.toDate());
-                activities = fetchedActivities;
-              });
+                  activities = fetchedActivities;
+                });
+                }
               devtools.log(
                   'Fetched travel plan details: $planName, $startDate - $endDate, Activities: ${activities.length}');
             }

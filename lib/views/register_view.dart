@@ -103,6 +103,7 @@ class _RegisterViewState extends State<RegisterView> {
                       'password': password,
                       'name': '',
                       'planId': '',
+                      'favourites': [],
                     },
                   );
                 }

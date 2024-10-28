@@ -22,7 +22,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String? name;
-  String? profileImageUrl;
   Uint8List? avatarBytes;
   bool isLoading = true;
 
@@ -39,12 +38,12 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() {
           name = userDoc['name'];
-          profileImageUrl = userDoc['profileImageUrl'];
         });
-        if (profileImageUrl != null) {
-          avatarBytes = await getAvatarUrlForProfile(profileImageUrl!);
-          setState(() {}); // Refresh UI after loading avatar bytes
-        }
+      }
+
+      await fetchProfileImage(uid);
+      if (mounted) {
+        setState(() {});
       }
     }
   }
@@ -62,19 +61,21 @@ class _ProfilePageState extends State<ProfilePage> {
     await fetchUserData(); // Save name to local storage
   }
 
-  Future<Uint8List> getAvatarUrlForProfile(String imageFileName) async {
+  Future<void> fetchProfileImage(String uid) async {
     try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('profile_pictures/$imageFileName');
+      final ref = FirebaseStorage.instance.ref().child(
+          'profile_pictures/$uid.png'); // Assuming the profile image is stored as uid.jpg
       Uint8List? imageBytes = await ref.getData(100000000);
-      if (imageBytes == null) {
-        throw Exception('Failed to load image');
+      if (imageBytes != null) {
+        avatarBytes = imageBytes;
       }
-      return imageBytes;
     } catch (e) {
-      devtools.log('Error fetching image: $e');
-      rethrow;
+      if (e is FirebaseException && e.code == 'object-not-found') {
+        devtools.log('No profile image found, using default image.');
+        // If no image is found, leave avatarBytes as null to use the default icon
+      } else {
+        devtools.log('Error fetching image: $e');
+      }
     }
   }
 
