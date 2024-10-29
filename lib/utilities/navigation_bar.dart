@@ -14,6 +14,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
     final controller = Get.put(NavigationController());
 
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       bottomNavigationBar: Obx(
         () => Padding(
           padding: const EdgeInsets.only(

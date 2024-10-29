@@ -1,16 +1,19 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'dart:developer' as devtools show log;
 import 'package:travelcustom/views/favourite_view.dart';
 import 'package:travelcustom/views/profile_edit.dart';
+import 'package:path/path.dart' as p;
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -23,6 +26,24 @@ class _ProfilePageState extends State<ProfilePage> {
   String? name;
   Uint8List? avatarBytes;
   bool isLoading = true;
+
+  Future<File?> getCachedImage(String imageName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = p.join(directory.path, imageName);
+    final file = File(path);
+    if (await file.exists()) {
+      return file;
+    } else {
+      return null;
+    }
+  }
+
+  Future<File> saveImageLocally(Uint8List imageBytes, String imageName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = p.join(directory.path, imageName);
+    final file = File(path);
+    return file.writeAsBytes(imageBytes);
+  }
 
   // Fetch user data from Firestore and save locally
   Future<void> fetchUserData() async {
@@ -47,6 +68,26 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // Check cache first, then fetch and cache profile image if not available
+  Future<void> fetchProfileImage(String uid) async {
+    File? cachedImage = await getCachedImage('$uid.png');
+    if (cachedImage != null) {
+      avatarBytes = await cachedImage.readAsBytes();
+    } else {
+      try {
+        final ref =
+            FirebaseStorage.instance.ref().child('profile_pictures/$uid.png');
+        Uint8List? imageBytes = await ref.getData(100000000);
+        if (imageBytes != null) {
+          avatarBytes = imageBytes;
+          await saveImageLocally(imageBytes, '$uid.png');
+        }
+      } catch (e) {
+        devtools.log('Error fetching image: $e');
+      }
+    }
+  }
+
   // Load user data from local storage
   Future<void> loadUserData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -58,24 +99,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> refreshProfileData() async {
     await fetchUserData(); // Save name to local storage
-  }
-
-  Future<void> fetchProfileImage(String uid) async {
-    try {
-      final ref = FirebaseStorage.instance.ref().child(
-          'profile_pictures/$uid.png'); // Assuming the profile image is stored as uid.jpg
-      Uint8List? imageBytes = await ref.getData(100000000);
-      if (imageBytes != null) {
-        avatarBytes = imageBytes;
-      }
-    } catch (e) {
-      if (e is FirebaseException && e.code == 'object-not-found') {
-        devtools.log('No profile image found, using default image.');
-        // If no image is found, leave avatarBytes as null to use the default icon
-      } else {
-        devtools.log('Error fetching image: $e');
-      }
-    }
   }
 
   @override

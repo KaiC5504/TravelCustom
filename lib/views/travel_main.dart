@@ -1,9 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:typed_data';
-
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:travelcustom/views/detail_view.dart';
@@ -20,7 +17,6 @@ class TravelView extends StatefulWidget {
 class _TravelViewState extends State<TravelView> {
   List<Map<String, dynamic>> recommendedDestinations = [];
   late Future<List<Map<String, dynamic>>> _recommendedDestinationsFuture;
-  Map<String, Uint8List?> destinationImages = {};
 
   @override
   void initState() {
@@ -41,33 +37,13 @@ class _TravelViewState extends State<TravelView> {
         await fetchUserPreferredTagsFromInteractions(userId);
 
     if (preferredTags.isEmpty) {
+      // If no preferred tags are found, return empty list and print a message
       devtools.log("No preferred tags found in interactions");
       return [];
     }
 
     List<Map<String, dynamic>> fetchedRecommendations =
         await fetchRecommendedDestinations(userId);
-
-    for (var recommendation in fetchedRecommendations) {
-      String destinationId = recommendation['id'];
-
-      try {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('destination_images/$destinationId.png');
-        Uint8List? destinationImageBytes = await ref.getData(100000000);
-        destinationImages[destinationId] = destinationImageBytes;
-      } catch (e) {
-        if (e is FirebaseException && e.code == 'object-not-found') {
-          devtools.log(
-              'No destination image found for destination $destinationId, using default image.');
-        } else {
-          devtools
-              .log('Error fetching image for destination $destinationId: $e');
-        }
-        destinationImages[destinationId] = null;
-      }
-    }
 
     setState(() {
       recommendedDestinations = fetchedRecommendations;
@@ -151,17 +127,30 @@ class _TravelViewState extends State<TravelView> {
                 stream: _getDestinations(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return SizedBox(
+                      height: 120, // Fixed height to avoid pushing UI elements
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
                   }
 
                   if (snapshot.hasError) {
-                    return const Center(
-                        child: Text('Error loading destinations'));
+                    return SizedBox(
+                      height: 120, // Fixed height to maintain layout stability
+                      child: const Center(
+                        child: Text('Error loading destinations'),
+                      ),
+                    );
                   }
 
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                        child: Text('No destinations available'));
+                    return SizedBox(
+                      height: 120, // Fixed height to keep layout stable
+                      child: const Center(
+                        child: Text('No destinations available'),
+                      ),
+                    );
                   }
 
                   final destinations = snapshot.data!.docs;
@@ -172,36 +161,15 @@ class _TravelViewState extends State<TravelView> {
                       scrollDirection: Axis.horizontal,
                       itemCount: destinations.length,
                       itemBuilder: (context, index) {
-                        var destinationDoc = destinations[index];
                         var destinationData =
                             destinations[index].data() as Map<String, dynamic>;
-                        String destinationId = destinationDoc.id;
-
-                        if (destinationImages[destinationId] == null) {
-                          FirebaseStorage.instance
-                              .ref()
-                              .child('destination_images/$destinationId.png')
-                              .getData(100000000)
-                              .then((imageBytes) {
-                            if (mounted) {
-                              setState(() {
-                                destinationImages[destinationId] = imageBytes;
-                              });
-                            }
-                          }).catchError((e) {
-                            if (e is FirebaseException &&
-                                e.code == 'object-not-found') {
-                              devtools.log(
-                                  'No destination image found for $destinationId, using default image.');
-                            } else {
-                              devtools.log(
-                                  'Error fetching image for $destinationId: $e');
-                            }
-                          });
-                        }
 
                         return GestureDetector(
                           onTap: () {
+                            // Get the document ID for the selected destination
+                            String destinationId =
+                                snapshot.data!.docs[index].id;
+                            // Navigate to the detailed page when tapped
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => DetailsPage(
@@ -217,16 +185,14 @@ class _TravelViewState extends State<TravelView> {
                             decoration: BoxDecoration(
                               shape: BoxShape.rectangle,
                               borderRadius: BorderRadius.circular(15),
-                              color: Colors.grey[200],
-                              image:
-                                  destinationImages[destinations[index].id] !=
-                                          null
-                                      ? DecorationImage(
-                                          image: MemoryImage(destinationImages[
-                                              destinations[index].id]!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
+                              image: destinationData['images'] != null &&
+                                      destinationData['images'].isNotEmpty
+                                  ? DecorationImage(
+                                      image: NetworkImage(
+                                          destinationData['images'][0]),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
                             child: Stack(
                               // Use Stack to overlay the text at the bottom center
@@ -318,65 +284,28 @@ class _TravelViewState extends State<TravelView> {
                     devtools.log(
                         "Error loading recommendations: ${snapshot.error}");
                     return const Center(
-                      child: Text('Error loading recommendations'),
+                      child: Text(
+                        'Error loading recommendations',
+                      ),
                     );
                   }
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(
-                      child: Text('No recommended destinations available'),
-                    );
+                        child: Text('No recommended destinations available'));
                   }
 
                   final recommendedDestinations = snapshot.data!;
 
                   return Column(
                     children: recommendedDestinations.map((destinationData) {
-                      // Ensure every required field is available
-                      if (!destinationData.containsKey('id') ||
-                          destinationData['id'] == null) {
-                        devtools.log(
-                            "Missing or null 'id' for destination data: $destinationData");
-                        return SizedBox
-                            .shrink(); // Skip rendering this item if ID is missing or null
-                      }
-                      if (!destinationData.containsKey('destination') ||
-                          destinationData['destination'] == null) {
-                        devtools.log(
-                            "Missing or null 'destination' for destination data: $destinationData");
-                        return SizedBox
-                            .shrink(); // Skip rendering this item if 'destination' is missing or null
-                      }
-
-                      String destinationId = destinationData['id'];
-                      String destinationName = destinationData['destination'];
-
-                      // Fetch the image if not already cached
-                      if (destinationImages[destinationId] == null) {
-                        FirebaseStorage.instance
-                            .ref()
-                            .child('destination_images/$destinationId.png')
-                            .getData(100000000)
-                            .then((imageBytes) {
-                          if (mounted) {
-                            setState(() {
-                              destinationImages[destinationId] = imageBytes;
-                            });
-                          }
-                        }).catchError((e) {
-                          if (e is FirebaseException &&
-                              e.code == 'object-not-found') {
-                            devtools.log(
-                                'No destination image found for $destinationId, using default image.');
-                          } else {
-                            devtools.log(
-                                'Error fetching image for $destinationId: $e');
-                          }
-                        });
-                      }
-
                       return GestureDetector(
                         onTap: () {
+                          devtools.log(destinationData
+                              .toString()); // Log the entire destinationData to check the structure
+                          //Navigate to detail page
+                          String destinationId = destinationData['id'];
+
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => DetailsPage(
@@ -391,49 +320,42 @@ class _TravelViewState extends State<TravelView> {
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey[200],
-                            image: destinationImages[destinationId] != null
+                            image: destinationData['images'] != null &&
+                                    destinationData['images'].isNotEmpty
                                 ? DecorationImage(
-                                    image: MemoryImage(
-                                        destinationImages[destinationId]!),
+                                    image: NetworkImage(
+                                        destinationData['images'][0]),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
                           ),
-                          child: destinationImages[destinationId] == null
-                              ? Center(
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey,
-                                    size: 30,
-                                  ),
-                                )
-                              : Stack(
-                                  children: [
-                                    Align(
-                                      alignment: Alignment.bottomCenter,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8.0),
-                                        color: Colors.black.withOpacity(0.6),
-                                        child: Text(
-                                          destinationName,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
+                          child: Stack(
+                            children: [
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8.0),
+                                  color: Colors.black.withOpacity(0.6),
+                                  child: Text(
+                                    destinationData['destination'] ??
+                                        'No Destination',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ],
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
                   );
                 },
-              )
+              ),
             ],
           ),
         ),
@@ -488,19 +410,8 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
   // Step 4: Add matching destinations to the recommendation list
   for (var doc in destinationSnapshot.docs) {
     var destinationData = doc.data() as Map<String, dynamic>;
-
-    // Validate required fields before adding to recommendations
-    if (!destinationData.containsKey('destination') ||
-        destinationData['destination'] == null) {
-      continue; // Skip if "destination" is missing or null
-    } else if (!destinationData.containsKey('tags') ||
-        destinationData['tags'] == null) {
-      continue; // Skip if "tags" is missing or null
-    } else {
-      // If all fields are valid, add to recommendations
-      destinationData['id'] = doc.id;
-      recommendedDestinations.add(destinationData);
-    }
+    destinationData['id'] = doc.id;
+    recommendedDestinations.add(destinationData);
   }
 
   return recommendedDestinations; // Return the matching destinations

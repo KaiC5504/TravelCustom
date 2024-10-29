@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:typed_data';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:path/path.dart' as p;
 import 'dart:developer' as devtools show log;
 
 import 'package:travelcustom/views/detail_view.dart';
@@ -30,6 +33,24 @@ class _PlatformPageState extends State<PlatformPage> {
     _fetchPosts();
   }
 
+  Future<File?> getCachedImage(String imageName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = p.join(directory.path, imageName);
+    final file = File(path);
+    if (await file.exists()) {
+      return file;
+    } else {
+      return null;
+    }
+  }
+
+  Future<File> saveImageLocally(Uint8List imageBytes, String imageName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = p.join(directory.path, imageName);
+    final file = File(path);
+    return file.writeAsBytes(imageBytes);
+  }
+
   // Fetch destination and user data
   Future<void> _fetchPosts() async {
     try {
@@ -47,37 +68,55 @@ class _PlatformPageState extends State<PlatformPage> {
             await _firestore.collection('users').doc(userId).get();
         var userData = userDoc.data() as Map<String, dynamic>;
 
-        // Fetch profile pictures
+        // Fetch profile picture with local caching
         Uint8List? profileBytes;
-        try {
-          final ref = _storage.ref().child('profile_pictures/$userId.png');
-          profileBytes = await ref.getData(100000000);
-        } catch (e) {
-          if (e is FirebaseException && e.code == 'object-not-found') {
-            devtools.log(
-                'No profile picture found for user $userId, using default picture.');
-          } else {
-            devtools.log('Error fetching picture for user $userId: $e');
+        File? cachedProfileImage = await getCachedImage('$userId.png');
+        if (cachedProfileImage != null) {
+          profileBytes = await cachedProfileImage.readAsBytes();
+        } else {
+          try {
+            final ref = _storage.ref().child('profile_pictures/$userId.png');
+            profileBytes = await ref.getData(100000000);
+            if (profileBytes != null) {
+              await saveImageLocally(profileBytes, '$userId.png');
+            }
+          } catch (e) {
+            if (e is FirebaseException && e.code == 'object-not-found') {
+              devtools.log(
+                  'No profile picture found for user $userId, using default picture.');
+            } else {
+              devtools.log('Error fetching picture for user $userId: $e');
+            }
           }
         }
 
         // Cache the profile picture
         profilePictures[userId] = profileBytes;
 
-        //Fetch destination images
+        // Fetch destination image with local caching
         Uint8List? destinationBytes;
-        try {
-          final ref = _storage
-              .ref()
-              .child('destination_images/${destinationDoc.id}.png');
-          destinationBytes = await ref.getData(100000000);
-        } catch (e) {
-          if (e is FirebaseException && e.code == 'object-not-found') {
-            devtools.log(
-                'No destination image found for destination ${destinationDoc.id}, using default image.');
-          } else {
-            devtools.log(
-                'Error fetching image for destination ${destinationDoc.id}: $e');
+        File? cachedDestinationImage =
+            await getCachedImage('${destinationDoc.id}.png');
+        if (cachedDestinationImage != null) {
+          destinationBytes = await cachedDestinationImage.readAsBytes();
+        } else {
+          try {
+            final ref = _storage
+                .ref()
+                .child('destination_images/${destinationDoc.id}.png');
+            destinationBytes = await ref.getData(100000000);
+            if (destinationBytes != null) {
+              await saveImageLocally(
+                  destinationBytes, '${destinationDoc.id}.png');
+            }
+          } catch (e) {
+            if (e is FirebaseException && e.code == 'object-not-found') {
+              devtools.log(
+                  'No destination image found for destination ${destinationDoc.id}, using default image.');
+            } else {
+              devtools.log(
+                  'Error fetching image for destination ${destinationDoc.id}: $e');
+            }
           }
         }
 
@@ -114,7 +153,6 @@ class _PlatformPageState extends State<PlatformPage> {
         clipBehavior: Clip.none,
         children: [
           // Main content: List of posts
-
           combinedPosts.isEmpty
               ? Center(
                   child: CircularProgressIndicator(),
