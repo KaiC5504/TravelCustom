@@ -59,7 +59,7 @@ class _FavouritePageState extends State<FavouritePage> {
 
             try {
               final ref =
-                  _storage.ref().child('destination_images/$destinationId.png');
+                  _storage.ref().child('destination_images/$destinationId.webp');
               Uint8List? destinationImageBytes = await ref.getData(100000000);
               destinationImages[destinationId] = destinationImageBytes;
             } catch (e) {

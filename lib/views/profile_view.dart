@@ -73,12 +73,12 @@ class _ProfilePageState extends State<ProfilePage> {
       {bool forceRefresh = false}) async {
     try {
       final ref =
-          FirebaseStorage.instance.ref().child('profile_pictures/$uid.png');
+          FirebaseStorage.instance.ref().child('profile_pictures/$uid.webp');
       Uint8List? imageBytes = await ref.getData(100000000);
 
       if (imageBytes != null) {
         avatarBytes = imageBytes; // Update in-memory image
-        await saveImageLocally(imageBytes, '$uid.png'); // Save to local cache
+        await saveImageLocally(imageBytes, '$uid.webp'); // Save to local cache
       }
     } catch (e) {
       devtools.log('Error fetching image: $e');

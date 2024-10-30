@@ -86,6 +86,8 @@ class _DetailsPageState extends State<DetailsPage> {
     }
   }
 
+  String? _authorName;
+
   Future<DocumentSnapshot> _getDestinationDetails() async {
     try {
       // Fetch the destination details
@@ -95,12 +97,21 @@ class _DetailsPageState extends State<DetailsPage> {
           .get();
 
       if (destinationDoc.exists) {
+        String authorId = destinationDoc['author'];
+
+        // Fetch author Name
+        DocumentSnapshot authorDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(authorId)
+            .get();
+        _authorName = authorDoc['name'] ?? 'Unknown';
+
         // Fetch destination image from Firebase Storage
         Uint8List? destinationImageBytes;
         try {
           final ref = FirebaseStorage.instance
               .ref()
-              .child('destination_images/${widget.destinationId}.png');
+              .child('destination_images/${widget.destinationId}.webp');
           destinationImageBytes = await ref.getData(100000000);
           destinationImages[widget.destinationId] = destinationImageBytes;
         } catch (e) {
@@ -205,6 +216,7 @@ class _DetailsPageState extends State<DetailsPage> {
                   CircularProgressIndicator(), // Loading indicator in the center
             );
           }
+          devtools.log('authorName: $_authorName');
 
           if (snapshot.hasError) {
             return const Center(child: Text('Error loading details'));
@@ -324,26 +336,59 @@ class _DetailsPageState extends State<DetailsPage> {
                     ),
                     const SizedBox(height: 15),
                     const Text(
-                      'Popular Attractions:',
+                      'Number of Reviews:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: (destinationData['popular_attractions']
-                                  as List<dynamic>?)
-                              ?.map((attraction) => Text(
-                                    attraction,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                    ),
-                                  ))
-                              .toList() ??
-                          [const Text('-')],
+                    Text(
+                      destinationData['number_of_reviews']?.toString() ?? '-',
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
                     ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'Posted Date:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      destinationData['post_date'] != null
+                          ? (destinationData['post_date'] as Timestamp)
+                              .toDate()
+                              .toLocal()
+                              .toString()
+                              .split(' ')[0]
+                              .split('-')
+                              .reversed
+                              .join('-')
+                          : '-',
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'Author:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      _authorName ?? 'Unknown',
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
                   ],
                 ),
                 const SizedBox(height: 30),

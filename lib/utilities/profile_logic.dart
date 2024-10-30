@@ -30,18 +30,18 @@ class UserProfileMethods {
 
   // Update `getAvatarForProfile` to check the cache first
   static Future<Uint8List?> getAvatarForProfile(String userId) async {
-    File? cachedImage = await getCachedImage('$userId.png');
+    File? cachedImage = await getCachedImage('$userId.webp');
     if (cachedImage != null) {
       return await cachedImage.readAsBytes();
     } else {
       try {
         final ref = FirebaseStorage.instance
             .ref()
-            .child('profile_pictures/$userId.png');
+            .child('profile_pictures/$userId.webp');
         Uint8List? imageBytes = await ref.getData(100000000);
         if (imageBytes != null) {
           await saveImageLocally(
-              imageBytes, '$userId.png'); // Cache downloaded image
+              imageBytes, '$userId.webp'); // Cache downloaded image
         }
         return imageBytes;
       } catch (e) {
@@ -151,7 +151,7 @@ class UserProfileMethods {
       }
 
       if (imageFile != null) {
-        String uniqueFileName = '$userId.png';
+        String uniqueFileName = '$userId.webp';
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('profile_pictures/$uniqueFileName');

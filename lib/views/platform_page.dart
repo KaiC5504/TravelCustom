@@ -72,15 +72,15 @@ class _PlatformPageState extends State<PlatformPage> {
 
         // Fetch profile picture with local caching
         Uint8List? profileBytes;
-        File? cachedProfileImage = await getCachedImage('$userId.png');
+        File? cachedProfileImage = await getCachedImage('$userId.webp');
         if (cachedProfileImage != null) {
           profileBytes = await cachedProfileImage.readAsBytes();
         } else {
           try {
-            final ref = _storage.ref().child('profile_pictures/$userId.png');
+            final ref = _storage.ref().child('profile_pictures/$userId.webp');
             profileBytes = await ref.getData(100000000);
             if (profileBytes != null) {
-              await saveImageLocally(profileBytes, '$userId.png');
+              await saveImageLocally(profileBytes, '$userId.webp');
             }
           } catch (e) {
             if (e is FirebaseException && e.code == 'object-not-found') {
@@ -98,18 +98,18 @@ class _PlatformPageState extends State<PlatformPage> {
         // Fetch destination image with local caching
         Uint8List? destinationBytes;
         File? cachedDestinationImage =
-            await getCachedImage('${destinationDoc.id}.png');
+            await getCachedImage('${destinationDoc.id}.webp');
         if (cachedDestinationImage != null) {
           destinationBytes = await cachedDestinationImage.readAsBytes();
         } else {
           try {
             final ref = _storage
                 .ref()
-                .child('destination_images/${destinationDoc.id}.png');
+                .child('destination_images/${destinationDoc.id}.webp');
             destinationBytes = await ref.getData(100000000);
             if (destinationBytes != null) {
               await saveImageLocally(
-                  destinationBytes, '${destinationDoc.id}.png');
+                  destinationBytes, '${destinationDoc.id}.webp');
             }
           } catch (e) {
             if (e is FirebaseException && e.code == 'object-not-found') {

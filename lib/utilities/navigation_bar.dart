@@ -54,7 +54,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                   onPressed: () => controller.selectedIndex.value = 1,
                 ),
                 IconButton(
-                  icon: FaIcon(FontAwesomeIcons.file,
+                  icon: FaIcon(FontAwesomeIcons.earthAsia,
                       color: controller.selectedIndex.value == 2
                           ? Colors.white
                           : Colors.grey),
