@@ -37,11 +37,7 @@ class _PlatformPageState extends State<PlatformPage> {
     final directory = await getApplicationDocumentsDirectory();
     final path = p.join(directory.path, imageName);
     final file = File(path);
-    if (await file.exists()) {
-      return file;
-    } else {
-      return null;
-    }
+    return await file.exists() ? file : null;
   }
 
   Future<File> saveImageLocally(Uint8List imageBytes, String imageName) async {
@@ -54,6 +50,11 @@ class _PlatformPageState extends State<PlatformPage> {
   // Fetch destination and user data
   Future<void> _fetchPosts() async {
     try {
+      // Clear previous data on refresh
+      combinedPosts.clear();
+      profilePictures.clear();
+      destinationImages.clear();
+
       QuerySnapshot destinationSnapshot = await _firestore
           .collection('destinations')
           .orderBy('post_date', descending: true)
@@ -157,106 +158,110 @@ class _PlatformPageState extends State<PlatformPage> {
               ? Center(
                   child: CircularProgressIndicator(),
                 )
-              : ListView.builder(
-                  itemCount: combinedPosts.length,
-                  itemBuilder: (context, index) {
-                    var post = combinedPosts[index];
-                    Uint8List? profilePicture =
-                        profilePictures[post['authorId']];
-                    String timeAgo = timeago
-                        .format((post['postDate'] as Timestamp).toDate());
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15.0),
-                        child: Material(
-                          color: Colors.white,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) => DetailsPage(
-                                      destinationId: post['destinationId'])));
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: profilePicture != null
-                                            ? MemoryImage(profilePicture)
-                                            : null,
-                                        child: profilePicture == null
-                                            ? Icon(Icons.person)
-                                            : null,
-                                      ),
-                                      SizedBox(width: 10.0),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            post['authorName'],
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
+              : RefreshIndicator(
+                  onRefresh: _fetchPosts,
+                  child: ListView.builder(
+                    itemCount: combinedPosts.length,
+                    itemBuilder: (context, index) {
+                      var post = combinedPosts[index];
+                      Uint8List? profilePicture =
+                          profilePictures[post['authorId']];
+                      String timeAgo = timeago
+                          .format((post['postDate'] as Timestamp).toDate());
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 8.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15.0),
+                          child: Material(
+                            color: Colors.white,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => DetailsPage(
+                                        destinationId: post['destinationId'])));
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundImage:
+                                              profilePicture != null
+                                                  ? MemoryImage(profilePicture)
+                                                  : null,
+                                          child: profilePicture == null
+                                              ? Icon(Icons.person)
+                                              : null,
+                                        ),
+                                        SizedBox(width: 10.0),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              post['authorName'],
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
+                                          ],
+                                        ),
+                                        Spacer(),
+                                        Text(
+                                          timeAgo,
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12.0,
                                           ),
-                                        ],
-                                      ),
-                                      Spacer(),
-                                      Text(
-                                        timeAgo,
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12.0,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 16.0),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        post['destination'],
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16.0,
+                                      ],
+                                    ),
+                                    SizedBox(height: 16.0),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          post['destination'],
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16.0,
+                                          ),
                                         ),
-                                      ),
-                                      SizedBox(height: 8.0),
-                                      destinationImages[
-                                                  post['destinationId']] !=
-                                              null
-                                          ? Image.memory(
-                                              destinationImages[
-                                                  post['destinationId']]!,
-                                              height: 200.0,
-                                              width: double.infinity,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Container(
-                                              height: 200.0,
-                                              width: double.infinity,
-                                              color: Colors.grey[200],
-                                              child: Icon(Icons.error,
-                                                  color: Colors.red),
-                                            ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 16.0),
-                                ],
+                                        SizedBox(height: 8.0),
+                                        destinationImages[
+                                                    post['destinationId']] !=
+                                                null
+                                            ? Image.memory(
+                                                destinationImages[
+                                                    post['destinationId']]!,
+                                                height: 200.0,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Container(
+                                                height: 200.0,
+                                                width: double.infinity,
+                                                color: Colors.grey[200],
+                                                child: Icon(Icons.error,
+                                                    color: Colors.red),
+                                              ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 16.0),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
 
           // Add button

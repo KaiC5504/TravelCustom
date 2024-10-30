@@ -87,6 +87,13 @@ class _TravelViewState extends State<TravelView> {
     return FirebaseFirestore.instance.collection('destinations').snapshots();
   }
 
+  Future<void> refreshTravelData() async {
+    _getDestinations();
+    setState(() {
+      _recommendedDestinationsFuture = fetchAndDisplayRecommendations();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,9 +103,11 @@ class _TravelViewState extends State<TravelView> {
         toolbarHeight: 0, // Remove default AppBar
       ),
       backgroundColor: Colors.grey[200],
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      body: RefreshIndicator(
+        onRefresh: refreshTravelData,
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
