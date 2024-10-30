@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'dart:developer' as devtools show log;
 
 import 'package:travelcustom/views/detail_view.dart';
+import 'package:travelcustom/views/post_destination.dart';
 
 class PlatformPage extends StatefulWidget {
   const PlatformPage({super.key});
@@ -264,7 +265,7 @@ class _PlatformPageState extends State<PlatformPage> {
                   ),
                 ),
 
-          // Add button
+          // Posting button
           Positioned(
             bottom: 0,
             left: MediaQuery.of(context).size.width / 2 - 140 / 2,
@@ -275,7 +276,10 @@ class _PlatformPageState extends State<PlatformPage> {
               ),
               child: InkWell(
                 onTap: () {
-                  devtools.log('Add button tapped');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => PostDestinationPage()),
+                  );
                 },
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(45),
