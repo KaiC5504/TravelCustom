@@ -3,7 +3,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:travelcustom/utilities/profile_logic.dart';
@@ -57,33 +56,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           await ImagePicker().pickImage(source: ImageSource.gallery);
 
       if (pickedFile != null) {
-        // Attempt to crop the selected image
-        CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: pickedFile.path,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Crop Image',
-              cropStyle: CropStyle.circle,
-              toolbarColor: Colors.deepPurple,
-              toolbarWidgetColor: Colors.white,
-              hideBottomControls: true,
-              lockAspectRatio: true,
-            ),
-            IOSUiSettings(
-              title: 'Crop Image',
-              cropStyle: CropStyle.circle,
-            ),
-          ],
-        );
-
-        if (croppedFile != null) {
-          setState(() {
-            _imageFile = File(croppedFile.path);
-          });
-        } else {
-          // If cropping was canceled or failed, navigate back with an error message
-          Navigator.of(context).pop('Image cropping was canceled or failed.');
-        }
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
       } else {
         // If no image was selected, navigate back with an error message
         Navigator.of(context).pop('No image was selected.');
