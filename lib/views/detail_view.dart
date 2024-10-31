@@ -205,6 +205,7 @@ class _DetailsPageState extends State<DetailsPage> {
         title: const Text('Destination Details'),
         centerTitle: true,
         backgroundColor: Colors.grey[200],
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: Colors.grey[200],
       body: FutureBuilder<DocumentSnapshot>(
@@ -332,7 +333,7 @@ class _DetailsPageState extends State<DetailsPage> {
                       destinationData['location'] ?? '-',
                       style: const TextStyle(
                         fontSize: 16,
-                      ),  
+                      ),
                     ),
                     const SizedBox(height: 15),
                     const Text(

@@ -159,6 +159,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
               'end': Timestamp.now(),
               'activities': [],
               'userId': userId,
+              'shared': false,
             });
 
             // Update the user's document with the new planId
@@ -283,6 +284,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
           child: Text('Travel Plan'),
         ),
         backgroundColor: Colors.grey[200],
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: Colors.grey[200],
       floatingActionButton: Padding(

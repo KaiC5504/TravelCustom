@@ -88,6 +88,7 @@ class _FavouritePageState extends State<FavouritePage> {
       appBar: AppBar(
         title: Text('My Favourites'),
         backgroundColor: Colors.grey[200],
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: Colors.grey[200],
       body: FutureBuilder<List<Map<String, dynamic>>>(

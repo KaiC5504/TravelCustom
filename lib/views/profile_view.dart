@@ -127,7 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
             style: TextStyle(color: Colors.black),
           ),
           backgroundColor: Colors.grey[200],
-          elevation: 0,
+          scrolledUnderElevation: 0,
           centerTitle: true,
         ),
         backgroundColor: Colors.grey[200],

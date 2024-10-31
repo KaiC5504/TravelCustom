@@ -169,6 +169,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         centerTitle: true,
         title: Text('Post Destination'),
         backgroundColor: Colors.grey[200],
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: Icon(Icons.menu, color: const Color.fromARGB(255, 42, 42, 42)),
           onPressed: () {},

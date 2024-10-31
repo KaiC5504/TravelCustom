@@ -92,7 +92,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           style: TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.grey[200],
-        elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
       ),
       backgroundColor: Colors.grey[200],

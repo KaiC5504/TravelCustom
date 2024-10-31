@@ -99,8 +99,8 @@ class _TravelViewState extends State<TravelView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.grey[200],
-        elevation: 0,
-        toolbarHeight: 0, // Remove default AppBar
+        scrolledUnderElevation: 0,
+        toolbarHeight: 0,
       ),
       backgroundColor: Colors.grey[200],
       body: RefreshIndicator(
