@@ -3,7 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import 'package:travelcustom/views/detail_view.dart';
+import 'package:travelcustom/views/destination_detail.dart';
 import 'dart:developer' as devtools show log;
 
 class SearchPage extends StatefulWidget {
@@ -271,7 +271,7 @@ class _SearchPageState extends State<SearchPage> {
                             // Navigate to the detailed page when tapped
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => DetailsPage(
+                                builder: (context) => DestinationDetailPage(
                                   destinationId: destinationId,
                                 ),
                               ),

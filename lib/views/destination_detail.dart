@@ -10,18 +10,18 @@ import 'package:travelcustom/utilities/content_filter.dart';
 import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'dart:developer' as devtools show log;
 
-class DetailsPage extends StatefulWidget {
+class DestinationDetailPage extends StatefulWidget {
   final String destinationId;
   final bool isFavourited;
 
-  const DetailsPage(
+  const DestinationDetailPage(
       {super.key, required this.destinationId, this.isFavourited = false});
 
   @override
-  State<DetailsPage> createState() => _DetailsPageState();
+  State<DestinationDetailPage> createState() => _DestinationDetailPageState();
 }
 
-class _DetailsPageState extends State<DetailsPage> {
+class _DestinationDetailPageState extends State<DestinationDetailPage> {
   bool _isFavourited = false;
   bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};

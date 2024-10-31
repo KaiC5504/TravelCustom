@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:travelcustom/views/detail_view.dart';
+import 'package:travelcustom/views/destination_detail.dart';
 import 'dart:developer' as devtools show log;
 
 class FavouritePage extends StatefulWidget {
@@ -58,8 +58,9 @@ class _FavouritePageState extends State<FavouritePage> {
             destinationData['id'] = destinationDoc.id;
 
             try {
-              final ref =
-                  _storage.ref().child('destination_images/$destinationId.webp');
+              final ref = _storage
+                  .ref()
+                  .child('destination_images/$destinationId.webp');
               Uint8List? destinationImageBytes = await ref.getData(100000000);
               destinationImages[destinationId] = destinationImageBytes;
             } catch (e) {
@@ -120,7 +121,7 @@ class _FavouritePageState extends State<FavouritePage> {
                     // Navigate to the detailed page when tapped
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => DetailsPage(
+                        builder: (context) => DestinationDetailPage(
                           destinationId: destinationId,
                         ),
                       ),

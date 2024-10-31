@@ -525,10 +525,8 @@ class _TravelPlanViewState extends State<TravelPlanView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         double screenWidth = MediaQuery.of(context).size.width;
-        devtools.log('Screen width: $screenWidth');
         double lineXY;
         bool isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-        devtools.log('Is iOS: $isIOS');
 
         if (isIOS) {
           if (screenWidth >= 430) {

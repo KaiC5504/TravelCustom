@@ -3,7 +3,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:travelcustom/views/detail_view.dart';
+import 'package:travelcustom/views/destination_detail.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'dart:developer' as devtools show log;
 
@@ -181,7 +181,7 @@ class _TravelViewState extends State<TravelView> {
                             // Navigate to the detailed page when tapped
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => DetailsPage(
+                                builder: (context) => DestinationDetailPage(
                                   destinationId:
                                       destinationId, // Pass the ID or name
                                 ),
@@ -317,7 +317,7 @@ class _TravelViewState extends State<TravelView> {
 
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => DetailsPage(
+                              builder: (context) => DestinationDetailPage(
                                 destinationId: destinationId,
                               ),
                             ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:typed_data';
-import 'package:travelcustom/utilities/destination_posts.dart';
-import 'package:travelcustom/views/detail_view.dart';
+import 'package:travelcustom/utilities/platform_post.dart';
+import 'package:travelcustom/views/destination_detail.dart';
 import 'package:travelcustom/views/post_destination.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'dart:developer' as devtools show log;
@@ -16,11 +16,16 @@ class PlatformPage extends StatefulWidget {
 }
 
 class _PlatformPageState extends State<PlatformPage> {
-  final DestinationPostsContent _destinationPostsContent =
-      DestinationPostsContent();
-  List<Map<String, dynamic>> combinedPosts = [];
-  Map<String, Uint8List?> profilePictures = {};
+  final PlatformPostsContent _platformPostsContent = PlatformPostsContent();
+
+  List<Map<String, dynamic>> destinationPosts = [];
+  Map<String, Uint8List?> destinationProfilePictures = {};
   Map<String, Uint8List?> destinationImages = {};
+  Map<String, String> destinationNames = {};
+
+  List<Map<String, dynamic>> planPosts = [];
+  Map<String, Uint8List?> planProfilePictures = {};
+
   bool showDestinations = true;
 
   @override
@@ -33,16 +38,36 @@ class _PlatformPageState extends State<PlatformPage> {
   Future<void> _fetchDestinationPosts() async {
     try {
       // Fetch data from DestinationService
-      final data = await _destinationPostsContent.fetchDestinationPosts();
+      final data = await _platformPostsContent.fetchDestinationPosts();
 
       // Update the state with combined data
       setState(() {
-        combinedPosts = data['combinedPosts'];
-        profilePictures = data['profilePictures'];
+        destinationPosts = data['combinedPosts'];
+        destinationProfilePictures = data['profilePictures'];
         destinationImages = data['destinationImages'];
+
+        destinationNames = {
+          for (var post in destinationPosts)
+            post['destinationId']: post['destination']
+        };
       });
     } catch (e) {
       devtools.log('Error fetching posts: $e');
+    }
+  }
+
+  Future<void> _fetchPlanPosts() async {
+    try {
+      // Fetch plan data from DestinationService
+      final data = await _platformPostsContent.fetchPlanPosts();
+
+      // Update the state with plan data
+      setState(() {
+        planPosts = data['planPosts'];
+        planProfilePictures = data['profilePictures'];
+      });
+    } catch (e) {
+      devtools.log('Error fetching travel plans: $e');
     }
   }
 
@@ -52,7 +77,7 @@ class _PlatformPageState extends State<PlatformPage> {
       if (showDestinations) {
         _fetchDestinationPosts();
       } else {
-        // Fetch plans
+        _fetchPlanPosts();
       }
     });
   }
@@ -62,7 +87,7 @@ class _PlatformPageState extends State<PlatformPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text('Travel Posts'),
+        title: Text('TravelCustom'),
         backgroundColor: Colors.grey[200],
         scrolledUnderElevation: 0,
       ),
@@ -120,120 +145,9 @@ class _PlatformPageState extends State<PlatformPage> {
                 ],
               ),
               Expanded(
-                child: combinedPosts.isEmpty
-                    ? Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _fetchDestinationPosts,
-                        child: ListView.builder(
-                          itemCount: combinedPosts.length,
-                          itemBuilder: (context, index) {
-                            var post = combinedPosts[index];
-                            Uint8List? profilePicture =
-                                profilePictures[post['authorId']];
-                            String timeAgo = timeago.format(
-                                (post['postDate'] as Timestamp).toDate());
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 8.0),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(15.0),
-                                child: Material(
-                                  color: Colors.white,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                              builder: (context) => DetailsPage(
-                                                  destinationId:
-                                                      post['destinationId'])));
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              CircleAvatar(
-                                                backgroundImage:
-                                                    profilePicture != null
-                                                        ? MemoryImage(
-                                                            profilePicture)
-                                                        : null,
-                                                child: profilePicture == null
-                                                    ? Icon(Icons.person)
-                                                    : null,
-                                              ),
-                                              SizedBox(width: 10.0),
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    post['authorName'],
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              Spacer(),
-                                              Text(
-                                                timeAgo,
-                                                style: TextStyle(
-                                                  color: Colors.grey,
-                                                  fontSize: 12.0,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 16.0),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                post['destination'],
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16.0,
-                                                ),
-                                              ),
-                                              SizedBox(height: 8.0),
-                                              destinationImages[post[
-                                                          'destinationId']] !=
-                                                      null
-                                                  ? Image.memory(
-                                                      destinationImages[post[
-                                                          'destinationId']]!,
-                                                      height: 200.0,
-                                                      width: double.infinity,
-                                                      fit: BoxFit.cover,
-                                                    )
-                                                  : Container(
-                                                      height: 200.0,
-                                                      width: double.infinity,
-                                                      color: Colors.grey[200],
-                                                      child: Icon(Icons.error,
-                                                          color: Colors.red),
-                                                    ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 16.0),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                child: showDestinations
+                    ? _buildDestinationPosts()
+                    : _buildPlanPosts(),
               ),
             ],
           ),
@@ -280,5 +194,218 @@ class _PlatformPageState extends State<PlatformPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildDestinationPosts() {
+    return destinationPosts.isEmpty
+        ? Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _fetchDestinationPosts,
+            child: ListView.builder(
+              itemCount: destinationPosts.length,
+              itemBuilder: (context, index) {
+                var post = destinationPosts[index];
+                Uint8List? profilePicture =
+                    destinationProfilePictures[post['authorId']];
+                String timeAgo =
+                    timeago.format((post['postDate'] as Timestamp).toDate());
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15.0),
+                    child: Material(
+                      color: Colors.white,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => DestinationDetailPage(
+                                  destinationId: post['destinationId']),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundImage: profilePicture != null
+                                        ? MemoryImage(profilePicture)
+                                        : null,
+                                    child: profilePicture == null
+                                        ? Icon(Icons.person)
+                                        : null,
+                                  ),
+                                  SizedBox(width: 10.0),
+                                  Text(
+                                    post['authorName'],
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Spacer(),
+                                  Text(
+                                    timeAgo,
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 12.0),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16.0),
+                              Text(
+                                post['destination'],
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.0),
+                              ),
+                              SizedBox(height: 8.0),
+                              destinationImages[post['destinationId']] != null
+                                  ? Image.memory(
+                                      destinationImages[post['destinationId']]!,
+                                      height: 200.0,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      height: 200.0,
+                                      width: double.infinity,
+                                      color: Colors.grey[200],
+                                      child:
+                                          Icon(Icons.error, color: Colors.red),
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+  }
+
+  Widget _buildPlanPosts() {
+    return planPosts.isEmpty
+        ? Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _fetchPlanPosts,
+            child: ListView.builder(
+              itemCount: planPosts.length,
+              itemBuilder: (context, index) {
+                var post = planPosts[index];
+                Uint8List? profilePicture = planProfilePictures[post['userId']];
+                List<dynamic> activities = post['activities'];
+                String timeAgo =
+                    timeago.format((post['postDate'] as Timestamp).toDate());
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15.0),
+                    child: Material(
+                      color: Colors.white,
+                      child: InkWell(
+                        onTap: () {
+                          // Add navigation to a detailed page for the plan if desired
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundImage: profilePicture != null
+                                        ? MemoryImage(profilePicture)
+                                        : null,
+                                    child: profilePicture == null
+                                        ? Icon(Icons.person)
+                                        : null,
+                                  ),
+                                  SizedBox(width: 10.0),
+                                  Text(
+                                    post['authorName'],
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Spacer(),
+                                  Text(
+                                    timeAgo,
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 12.0),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16.0),
+                              Text(
+                                post['planName'],
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18.0),
+                              ),
+                              SizedBox(height: 8.0),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (var i = 0;
+                                      i <
+                                          (activities.length > 3
+                                              ? 3
+                                              : activities.length);
+                                      i++)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            destinationNames.containsKey(
+                                                    activities[i]
+                                                        ['destination'])
+                                                ? destinationNames[activities[i]
+                                                    ['destination']]!
+                                                : activities[i]['destination'],
+                                            style: TextStyle(fontSize: 16.0),
+                                          ),
+                                          Text(
+                                            activities[i]['time'],
+                                            style: TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 14.0),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  if (activities.length > 3)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0),
+                                      child: Text(
+                                        "......",
+                                        style: TextStyle(
+                                            fontSize: 18.0, color: Colors.grey),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
   }
 }

@@ -47,14 +47,14 @@ class CustomBottomNavigationBar extends StatelessWidget {
                   onPressed: () => controller.selectedIndex.value = 0,
                 ),
                 IconButton(
-                  icon: FaIcon(FontAwesomeIcons.map,
+                  icon: FaIcon(FontAwesomeIcons.earthAsia,
                       color: controller.selectedIndex.value == 1
                           ? Colors.white
                           : Colors.grey),
                   onPressed: () => controller.selectedIndex.value = 1,
                 ),
                 IconButton(
-                  icon: FaIcon(FontAwesomeIcons.earthAsia,
+                  icon: FaIcon(FontAwesomeIcons.map,
                       color: controller.selectedIndex.value == 2
                           ? Colors.white
                           : Colors.grey),
@@ -87,8 +87,8 @@ class NavigationController extends GetxController {
 
   final screens = [
     const TravelView(),
-    const TravelPlanView(),
     const PlatformPage(),
+    const TravelPlanView(),
     const ProfilePage(),
   ];
 }
