@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,7 +8,9 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'dart:developer' as devtools show log;
+import 'package:path_provider/path_provider.dart';
 
 class PostDestinationPage extends StatefulWidget {
   const PostDestinationPage({super.key});
@@ -24,13 +27,80 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
   final List<String> _selectedTags = [];
 
   Future<void> _pickImage() async {
-    // Attempt to pick an image from the gallery
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
+      File imageFile = File(pickedFile.path);
+
+      // Check if the file exists to prevent errors
+      if (!(await imageFile.exists())) {
+        devtools.log('File does not exist: ${imageFile.path}');
+        return;
+      }
+
+      const int maxSizeInBytes = 100 * 1024; // Target size 100 KB
+      int fileSize = await imageFile.length();
+      devtools.log('File size: ${fileSize / (1024 * 1024)} MB');
+
+      // Only compress if the file is larger than 100 KB
+      if (fileSize > maxSizeInBytes) {
+        int quality;
+
+        if (fileSize <= 0.5 * 1024 * 1024) {
+          quality = 40;
+        } else if (fileSize <= 1 * 1024 * 1024) {
+          // 1 MB or less
+          quality = 80;
+        } else if (fileSize <= 2 * 1024 * 1024) {
+          // 1 MB - 2 MB
+          quality = 75;
+        } else if (fileSize <= 3 * 1024 * 1024) {
+          // 2 MB - 3 MB
+          quality = 87;
+        } else if (fileSize <= 4 * 1024 * 1024) {
+          // 3 MB - 4 MB
+          quality = 80;
+        } else if (fileSize <= 18 * 1024 * 1024) {
+          // 4 MB - 18 MB
+          quality = 40;
+        } else {
+          quality = 10;
+        }
+
+        try {
+          // Compress and convert to WEBP
+          final Uint8List? compressedImage =
+              await FlutterImageCompress.compressWithFile(
+            imageFile.path,
+            format: CompressFormat.webp,
+            quality: quality,
+          );
+
+          if (compressedImage != null) {
+            final tempDir = await getTemporaryDirectory();
+            final tempFile = File(
+                '${tempDir.path}/compressed_image_${DateTime.now().millisecondsSinceEpoch}.webp');
+            await tempFile.writeAsBytes(compressedImage);
+
+            imageFile = tempFile;
+          } else {
+            devtools.log('Compression failed.');
+            return;
+          }
+        } catch (e) {
+          devtools.log('Error accessing or compressing file: $e');
+          return;
+        }
+      }
+
+      // Log final file size after conditional compression
+      int finalSize = await imageFile.length();
+      devtools.log(
+          'File size after conditional compression (if applied): ${finalSize / (1024 * 1024)} MB');
+
       setState(() {
-        _image = File(pickedFile.path);
+        _image = imageFile;
       });
     } else {
       devtools.log('No image selected.');
@@ -64,6 +134,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         'description': _descriptionController.text,
         'destination': _nameController.text,
         'images': [],
+        'location': _locationController.text,
         'number_of_reviews': 0,
         'post_date': Timestamp.now(),
         'tags': _selectedTags,
@@ -99,12 +170,13 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         title: Text('Post Destination'),
         backgroundColor: Colors.grey[200],
         leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.grey),
+          icon: Icon(Icons.menu, color: const Color.fromARGB(255, 42, 42, 42)),
           onPressed: () {},
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.check, color: Colors.grey),
+            icon:
+                Icon(Icons.check, color: const Color.fromARGB(255, 42, 42, 42)),
             onPressed: () {
               _uploadDestination();
               devtools.log('Upload destination');
@@ -126,12 +198,13 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
               child: Container(
                 height: 200.0,
                 width: double.infinity,
+                key: ValueKey(_image?.path),
                 decoration: BoxDecoration(
                   color: Colors.purple[100],
                   borderRadius: BorderRadius.circular(10.0),
                   image: _image != null
                       ? DecorationImage(
-                          image: FileImage(_image!),
+                          image: FileImage(_image!), // No key needed here
                           fit: BoxFit.cover,
                         )
                       : null,

@@ -321,6 +321,21 @@ class _DetailsPageState extends State<DetailsPage> {
                     ),
                     const SizedBox(height: 15),
                     const Text(
+                      'Location:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      destinationData['location'] ?? '-',
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),  
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
                       'Average Rating:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
