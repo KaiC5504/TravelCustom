@@ -10,7 +10,10 @@ import 'package:intl/intl.dart';
 import 'package:travelcustom/views/search_view.dart';
 
 class TravelPlanView extends StatefulWidget {
-  const TravelPlanView({super.key});
+  final String? planId;
+  final String collectionName;
+  const TravelPlanView(
+      {super.key, this.planId, this.collectionName = 'travel_plans'});
 
   @override
   State<TravelPlanView> createState() => _TravelPlanViewState();
@@ -35,89 +38,79 @@ class _TravelPlanViewState extends State<TravelPlanView> {
 
   Future<void> fetchTravelPlanDetails() async {
     try {
-      String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      String planId = widget.planId ?? await _getUserPlanId();
 
-      if (userId.isEmpty) {
-        devtools.log('User is not logged in');
+      if (planId.isEmpty) {
+        devtools.log('No planId found');
         return;
       }
 
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
+      DocumentSnapshot planDoc = await FirebaseFirestore.instance
+          .collection(widget.collectionName) // Use platform_plans collection
+          .doc(planId)
           .get();
 
-      if (userDoc.exists) {
-        Map<String, dynamic>? userData =
-            userDoc.data() as Map<String, dynamic>?;
-        if (userData != null && userData['planId'] != null) {
-          String planId = userData['planId'];
+      if (planDoc.exists) {
+        Map<String, dynamic>? planData =
+            planDoc.data() as Map<String, dynamic>?;
+        if (planData != null) {
+          List<Map<String, dynamic>> fetchedActivities =
+              List<Map<String, dynamic>>.from(planData['activities'] ?? []);
 
-          // Fetch the travel plan document
-          DocumentSnapshot planDoc = await FirebaseFirestore.instance
-              .collection('travel_plans')
-              .doc(planId)
-              .get();
+          // Sort the activities by time
+          fetchedActivities.sort((a, b) {
+            int timeAInMinutes = _convertTimeToMinutes(a['time'] ?? '12:00 AM');
+            int timeBInMinutes = _convertTimeToMinutes(b['time'] ?? '12:00 AM');
+            return timeAInMinutes.compareTo(timeBInMinutes);
+          });
 
-          if (planDoc.exists) {
-            Map<String, dynamic>? planData =
-                planDoc.data() as Map<String, dynamic>?;
-            if (planData != null) {
-              List<Map<String, dynamic>> fetchedActivities =
-                  List<Map<String, dynamic>>.from(planData['activities'] ?? []);
+          for (var activity in fetchedActivities) {
+            String destinationId = activity['destination'] ?? '';
+            if (destinationId.isNotEmpty) {
+              DocumentSnapshot destinationDoc = await FirebaseFirestore.instance
+                  .collection('destinations')
+                  .doc(destinationId)
+                  .get();
 
-              // Sort the activities by time
-              fetchedActivities.sort((a, b) {
-                int timeAInMinutes =
-                    _convertTimeToMinutes(a['time'] ?? '12:00 AM');
-                int timeBInMinutes =
-                    _convertTimeToMinutes(b['time'] ?? '12:00 AM');
-                return timeAInMinutes.compareTo(timeBInMinutes);
-              });
-
-              for (var activity in fetchedActivities) {
-                String destinationId = activity['destination'] ?? '';
-                if (destinationId.isNotEmpty) {
-                  DocumentSnapshot destinationDoc = await FirebaseFirestore
-                      .instance
-                      .collection('destinations')
-                      .doc(destinationId)
-                      .get();
-
-                  if (destinationDoc.exists) {
-                    String destinationName =
-                        destinationDoc['destination'] ?? 'Not Found';
-                    destinationNames[destinationId] = destinationName;
-                  }
-                }
+              if (destinationDoc.exists) {
+                String destinationName =
+                    destinationDoc['destination'] ?? 'Not Found';
+                destinationNames[destinationId] = destinationName;
               }
-
-              if (mounted) {
-                setState(() {
-                  planName = planData['planName'] ?? '';
-                  Timestamp startTimestamp =
-                      planData['start'] ?? Timestamp.now();
-                  Timestamp endTimestamp = planData['end'] ?? Timestamp.now();
-                  startDate =
-                      DateFormat('dd-MM-yyyy').format(startTimestamp.toDate());
-                  endDate =
-                      DateFormat('dd-MM-yyyy').format(endTimestamp.toDate());
-                  activities = fetchedActivities;
-                });
-              }
-              devtools.log(
-                  'Fetched travel plan details: $planName, $startDate - $endDate, Activities: ${activities.length}');
             }
-          } else {
-            devtools.log('Plan document does not exist.');
           }
+
+          if (mounted) {
+            setState(() {
+              planName = planData['plan_name'] ??
+                  ''; // Adjust for field name in platform_plans
+              Timestamp startTimestamp = planData['start'] ?? Timestamp.now();
+              Timestamp endTimestamp = planData['end'] ?? Timestamp.now();
+              startDate =
+                  DateFormat('dd-MM-yyyy').format(startTimestamp.toDate());
+              endDate = DateFormat('dd-MM-yyyy').format(endTimestamp.toDate());
+              activities = fetchedActivities;
+            });
+          }
+          devtools.log(
+              'Fetched platform plan details: $planName, $startDate - $endDate, Activities: ${activities.length}');
         }
       } else {
-        devtools.log('User document does not exist.');
+        devtools.log('Plan document does not exist.');
       }
     } catch (e) {
-      devtools.log('Error fetching travel plan details: $e');
+      devtools.log('Error fetching platform plan details: $e');
     }
+  }
+
+  Future<String> _getUserPlanId() async {
+    String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId.isEmpty) return '';
+
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+    return userDoc.exists ? userDoc['planId'] ?? '' : '';
   }
 
   Future<void> checkUserHasPlan() async {
@@ -287,162 +280,171 @@ class _TravelPlanViewState extends State<TravelPlanView> {
         scrolledUnderElevation: 0,
       ),
       backgroundColor: Colors.grey[200],
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(50),
-          ),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Center(
-                    child: Text(
-                      'Add to Plan',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
-                    ),
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (context) => const SearchPage()),
-                          );
-                        },
-                        child: Text(
-                          'Add Destination',
-                          style: TextStyle(fontSize: 18),
+      floatingActionButton: widget.collectionName == 'travel_plans'
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: FloatingActionButton(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Center(
+                          child: Text(
+                            'Add to Plan',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 25),
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 10),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              TextEditingController destinationController =
-                                  TextEditingController();
-                              TimeOfDay? selectedTime;
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (context) => const SearchPage()),
+                                );
+                              },
+                              child: Text(
+                                'Add Destination',
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    TextEditingController
+                                        destinationController =
+                                        TextEditingController();
+                                    TimeOfDay? selectedTime;
 
-                              return AlertDialog(
-                                title: Text(
-                                  'Create Custom Activity',
-                                ),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TextField(
-                                      controller: destinationController,
-                                      decoration: InputDecoration(
-                                          labelText: 'Destination'),
-                                    ),
-                                    SizedBox(height: 10),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        selectedTime = await showTimePicker(
-                                          context: context,
-                                          initialTime: TimeOfDay.now(),
-                                        );
-                                        setState(() {});
-                                      },
-                                      child: Text('Select Time'),
-                                    ),
-                                    if (selectedTime != null)
-                                      Text(
-                                          'Selected Time: ${selectedTime!.format(context)}'),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      if (destinationController
-                                              .text.isNotEmpty &&
-                                          selectedTime != null) {
-                                        String destination =
-                                            destinationController.text;
-                                        String time =
-                                            selectedTime!.format(context);
-
-                                        String userId = FirebaseAuth
-                                                .instance.currentUser?.uid ??
-                                            '';
-                                        if (userId.isNotEmpty) {
-                                          FirebaseFirestore.instance
-                                              .collection('users')
-                                              .doc(userId)
-                                              .get()
-                                              .then(
-                                            (userDoc) {
-                                              if (userDoc.exists) {
-                                                String planId =
-                                                    userDoc['planId'] ?? '';
-                                                if (planId.isNotEmpty) {
-                                                  FirebaseFirestore.instance
-                                                      .collection(
-                                                          'travel_plans')
-                                                      .doc(planId)
-                                                      .update(
-                                                    {
-                                                      'activities':
-                                                          FieldValue.arrayUnion(
-                                                        [
-                                                          {
-                                                            'destination':
-                                                                destination,
-                                                            'time': time
-                                                          }
-                                                        ],
-                                                      )
-                                                    },
-                                                  );
-                                                }
-                                              }
+                                    return AlertDialog(
+                                      title: Text(
+                                        'Create Custom Activity',
+                                      ),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: destinationController,
+                                            decoration: InputDecoration(
+                                                labelText: 'Destination'),
+                                          ),
+                                          SizedBox(height: 10),
+                                          ElevatedButton(
+                                            onPressed: () async {
+                                              selectedTime =
+                                                  await showTimePicker(
+                                                context: context,
+                                                initialTime: TimeOfDay.now(),
+                                              );
+                                              setState(() {});
                                             },
-                                          );
-                                        }
+                                            child: Text('Select Time'),
+                                          ),
+                                          if (selectedTime != null)
+                                            Text(
+                                                'Selected Time: ${selectedTime!.format(context)}'),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            if (destinationController
+                                                    .text.isNotEmpty &&
+                                                selectedTime != null) {
+                                              String destination =
+                                                  destinationController.text;
+                                              String time =
+                                                  selectedTime!.format(context);
 
-                                        // Add the new custom activity to the activities list
-                                        setState(() {
-                                          activities.add({
-                                            'destination': destination,
-                                            'time': time
-                                          });
-                                        });
+                                              String userId = FirebaseAuth
+                                                      .instance
+                                                      .currentUser
+                                                      ?.uid ??
+                                                  '';
+                                              if (userId.isNotEmpty) {
+                                                FirebaseFirestore.instance
+                                                    .collection('users')
+                                                    .doc(userId)
+                                                    .get()
+                                                    .then(
+                                                  (userDoc) {
+                                                    if (userDoc.exists) {
+                                                      String planId =
+                                                          userDoc['planId'] ??
+                                                              '';
+                                                      if (planId.isNotEmpty) {
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'travel_plans')
+                                                            .doc(planId)
+                                                            .update(
+                                                          {
+                                                            'activities':
+                                                                FieldValue
+                                                                    .arrayUnion(
+                                                              [
+                                                                {
+                                                                  'destination':
+                                                                      destination,
+                                                                  'time': time
+                                                                }
+                                                              ],
+                                                            )
+                                                          },
+                                                        );
+                                                      }
+                                                    }
+                                                  },
+                                                );
+                                              }
 
-                                        Navigator.of(context).pop();
-                                        fetchTravelPlanDetails();
-                                      }
-                                    },
-                                    child: Text('Add Activity'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        child: Text(
-                          'Create Custom Activity',
-                          style: TextStyle(fontSize: 18),
+                                              // Add the new custom activity to the activities list
+                                              setState(() {
+                                                activities.add({
+                                                  'destination': destination,
+                                                  'time': time
+                                                });
+                                              });
+
+                                              Navigator.of(context).pop();
+                                              fetchTravelPlanDetails();
+                                            }
+                                          },
+                                          child: Text('Add Activity'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                              child: Text(
+                                'Create Custom Activity',
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-          backgroundColor: const Color.fromARGB(255, 135, 139, 227),
-          child: FaIcon(FontAwesomeIcons.plus, color: Colors.white),
-        ),
-      ),
+                      );
+                    },
+                  );
+                },
+                backgroundColor: const Color.fromARGB(255, 135, 139, 227),
+                child: FaIcon(FontAwesomeIcons.plus, color: Colors.white),
+              ),
+            )
+          : null,
       body: Column(
         children: [
           // Day Switcher
@@ -450,12 +452,6 @@ class _TravelPlanViewState extends State<TravelPlanView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildDayButton(1, startDate),
-              IconButton(
-                icon: Icon(Icons.add_circle_outline),
-                onPressed: () {
-                  //New day functionality
-                },
-              ),
             ],
           ),
           Divider(),
@@ -475,9 +471,9 @@ class _TravelPlanViewState extends State<TravelPlanView> {
                     return MapEntry(
                         index,
                         GestureDetector(
-                          onLongPress: () {
-                            _handleDeleteActivity(index);
-                          },
+                          onLongPress: widget.collectionName == 'travel_plans'
+                              ? () => _handleDeleteActivity(index)
+                              : null,
                           child: _buildTimeLineItem(
                             activityTime,
                             activityDestination,

@@ -6,7 +6,10 @@ import 'package:travelcustom/utilities/platform_post.dart';
 import 'package:travelcustom/views/destination_detail.dart';
 import 'package:travelcustom/views/post_destination.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:travelcustom/views/post_plan.dart';
 import 'dart:developer' as devtools show log;
+
+import 'package:travelcustom/views/travel_plan_view.dart';
 
 class PlatformPage extends StatefulWidget {
   const PlatformPage({super.key});
@@ -163,10 +166,16 @@ class _PlatformPageState extends State<PlatformPage> {
               ),
               child: InkWell(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) => PostDestinationPage()),
-                  );
+                  if (showDestinations) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (context) => PostDestinationPage()),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => PostPlanPage()),
+                    );
+                  }
                 },
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(45),
@@ -312,7 +321,14 @@ class _PlatformPageState extends State<PlatformPage> {
                       color: Colors.white,
                       child: InkWell(
                         onTap: () {
-                          // Add navigation to a detailed page for the plan if desired
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => TravelPlanView(
+                                planId: post['planId'],
+                                collectionName: 'platform_plans',
+                              ),
+                            ),
+                          );
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
