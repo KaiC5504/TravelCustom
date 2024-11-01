@@ -1,12 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
-
 import 'dart:typed_data';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:travelcustom/utilities/content_filter.dart';
+import 'package:travelcustom/utilities/destination_content.dart';
 import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'dart:developer' as devtools show log;
 
@@ -22,132 +20,52 @@ class DestinationDetailPage extends StatefulWidget {
 }
 
 class _DestinationDetailPageState extends State<DestinationDetailPage> {
+  final DestinationContent _destinationContent = DestinationContent();
   bool _isFavourited = false;
   bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};
+  Uint8List? destinationImageData;
 
   @override
   void initState() {
     super.initState();
     _isFavourited = widget.isFavourited;
     _checkIfFavourited();
+    _fetchDestinationImage();
   }
 
-  void _toggleFavourite() {
-    setState(() {
-      _isFavourited = !_isFavourited;
-    });
-
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
-
-    if (userId != null) {
-      DocumentReference userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userId);
-
-      if (_isFavourited) {
-        userDocRef.update({
-          'favourites': FieldValue.arrayUnion([widget.destinationId])
-        }).then((_) {
-          devtools.log('Favourite added successfully');
-        }).catchError((error) {
-          devtools.log('Failed to add favourite: $error');
-        });
-      } else {
-        userDocRef.update({
-          'favourites': FieldValue.arrayRemove([widget.destinationId])
-        }).then((_) {
-          devtools.log('Favourite removed successfully');
-        }).catchError((error) {
-          devtools.log('Failed to remove favourite: $error');
-        });
-      }
-    } else {
-      devtools.log('User is not logged in');
-    }
+  void _fetchDestinationImage() async {
+    // Fetch the image data from Firebase
+    destinationImageData =
+        await _destinationContent.getDestinationImage(widget.destinationId);
+    setState(() {}); // Trigger a rebuild to display the image
   }
 
   void _checkIfFavourited() async {
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    _isFavourited =
+        await _destinationContent.checkIfFavourited(widget.destinationId);
+    setState(() {});
+  }
 
-    if (userId != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-
-      if (userDoc.exists) {
-        List<dynamic> favourites = userDoc['favourites'] ?? [];
-        setState(() {
-          _isFavourited = favourites.contains(widget.destinationId);
-        });
-      }
-    } else {
-      devtools.log('User is not logged in');
-    }
+  void _toggleFavourite() async {
+    await _destinationContent.toggleFavourite(
+        widget.destinationId, !_isFavourited);
+    setState(() {
+      _isFavourited = !_isFavourited;
+    });
   }
 
   String? _authorName;
 
-  Future<DocumentSnapshot> _getDestinationDetails() async {
-    try {
-      // Fetch the destination details
-      DocumentSnapshot destinationDoc = await FirebaseFirestore.instance
-          .collection('destinations')
-          .doc(widget.destinationId)
-          .get();
-
-      if (destinationDoc.exists) {
-        String authorId = destinationDoc['author'];
-
-        // Fetch author Name
-        DocumentSnapshot authorDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(authorId)
-            .get();
-        _authorName = authorDoc['name'] ?? 'Unknown';
-
-        // Fetch destination image from Firebase Storage
-        Uint8List? destinationImageBytes;
-        try {
-          final ref = FirebaseStorage.instance
-              .ref()
-              .child('destination_images/${widget.destinationId}.webp');
-          destinationImageBytes = await ref.getData(100000000);
-          destinationImages[widget.destinationId] = destinationImageBytes;
-        } catch (e) {
-          if (e is FirebaseException && e.code == 'object-not-found') {
-            devtools.log(
-                'No destination image found for ${widget.destinationId}, using default image.');
-          } else {
-            devtools
-                .log('Error fetching image for ${widget.destinationId}: $e');
-          }
-        }
-      }
-
-      return destinationDoc;
-    } catch (e) {
-      devtools.log('Error fetching destination details: $e');
-      rethrow;
-    }
+  Future<DocumentSnapshot> _getDestinationDetails() {
+    return _destinationContent.getDestinationDetails(widget.destinationId);
   }
 
   void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
-
     if (userId != null) {
-      String destinationId = widget.destinationId;
-
-      if (destinationData['tags'] != null && destinationData['tags'] is List) {
-        List<String> destinationTypes =
-            List<String>.from(destinationData['tags']);
-
-        await trackUserInteraction(
-            userId, destinationId, destinationTypes, 'view');
-        showUserPreferences(userId);
-      } else {
-        devtools.log('tags is missing or not a valid list.');
-      }
+      await _destinationContent.trackUserViewInteraction(
+          userId, widget.destinationId, destinationData);
     } else {
       devtools.log('User is not logged in');
     }
@@ -155,46 +73,25 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
 
   void _addToPlan() async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
-
-    if (userId != null) {
-      TimeOfDay? selectedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-
-      if (selectedTime != null) {
-        String formattedTime = selectedTime.format(context);
-
-        QuerySnapshot travelPlansSnapshot = await FirebaseFirestore.instance
-            .collection('travel_plans')
-            .where('userId', isEqualTo: userId)
-            .get();
-
-        if (travelPlansSnapshot.docs.isNotEmpty) {
-          DocumentReference travelPlanDocRef =
-              travelPlansSnapshot.docs.first.reference;
-
-          travelPlanDocRef.update({
-            'activities': FieldValue.arrayUnion([
-              {'destination': widget.destinationId, 'time': formattedTime}
-            ])
-          }).then((_) {
-            devtools.log('Activity added to travel plan successfully');
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => CustomBottomNavigationBar()),
-              (Route<dynamic> route) => false,
-            );
-          }).catchError((error) {
-            devtools.log('Failed to add activity to travel plan: $error');
-          });
-        } else {
-          devtools.log('No travel plan found for user');
-        }
-      }
-    } else {
+    if (userId == null) {
       devtools.log('User is not logged in');
+      return;
+    }
+
+    TimeOfDay? selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (selectedTime != null) {
+      String formattedTime = selectedTime.format(context);
+      await _destinationContent.addToPlan(
+          userId, widget.destinationId, formattedTime);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => CustomBottomNavigationBar()),
+        (Route<dynamic> route) => false,
+      );
     }
   }
 
@@ -213,8 +110,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child:
-                  CircularProgressIndicator(), // Loading indicator in the center
+              child: CircularProgressIndicator(),
             );
           }
           devtools.log('authorName: $_authorName');
@@ -244,10 +140,9 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     color: Colors.grey[200],
-                    image: destinationImages[widget.destinationId] != null
+                    image: destinationImageData != null
                         ? DecorationImage(
-                            image: MemoryImage(
-                                destinationImages[widget.destinationId]!),
+                            image: MemoryImage(destinationImageData!),
                             fit: BoxFit.cover,
                           )
                         : null,
