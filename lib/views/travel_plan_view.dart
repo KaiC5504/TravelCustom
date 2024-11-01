@@ -30,7 +30,6 @@ class _TravelPlanViewState extends State<TravelPlanView> {
   @override
   void initState() {
     super.initState();
-    checkUserHasPlan();
     setState(() {
       fetchTravelPlanDetails();
     });
@@ -58,11 +57,17 @@ class _TravelPlanViewState extends State<TravelPlanView> {
               List<Map<String, dynamic>>.from(planData['activities'] ?? []);
 
           // Sort the activities by time
-          fetchedActivities.sort((a, b) {
+            fetchedActivities.sort((a, b) {
             int timeAInMinutes = _convertTimeToMinutes(a['time'] ?? '12:00 AM');
             int timeBInMinutes = _convertTimeToMinutes(b['time'] ?? '12:00 AM');
             return timeAInMinutes.compareTo(timeBInMinutes);
-          });
+            });
+
+            // Update the sorted activities in Firestore
+            await FirebaseFirestore.instance
+              .collection(widget.collectionName)
+              .doc(planId)
+              .update({'activities': fetchedActivities});
 
           for (var activity in fetchedActivities) {
             String destinationId = activity['destination'] ?? '';
@@ -112,69 +117,7 @@ class _TravelPlanViewState extends State<TravelPlanView> {
 
     return userDoc.exists ? userDoc['planId'] ?? '' : '';
   }
-
-  Future<void> checkUserHasPlan() async {
-    try {
-      // Get the current user ID
-      String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-      if (userId.isEmpty) {
-        devtools.log('User is not logged in');
-        return;
-      }
-
-      // Reference to the 'users' collection and the specific user document
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-
-      if (userDoc.exists) {
-        // Check if the 'planId' field exists and is not empty
-        Map<String, dynamic>? userData =
-            userDoc.data() as Map<String, dynamic>?;
-        if (userData != null && userData['planId'] != null) {
-          String planId = userData['planId'];
-          if (planId.isNotEmpty) {
-            devtools.log('User has a planId: $planId');
-          } else {
-            devtools.log('No plan, creating new planId...');
-            String newPlanId =
-                FirebaseFirestore.instance.collection('travel_plans').doc().id;
-
-            // Create a new travel plan document with the newPlanId
-            await FirebaseFirestore.instance
-                .collection('travel_plans')
-                .doc(newPlanId)
-                .set({
-              'planName': '',
-              'start': Timestamp.now(),
-              'end': Timestamp.now(),
-              'activities': [],
-              'userId': userId,
-              'shared': false,
-            });
-
-            // Update the user's document with the new planId
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(userId)
-                .update({'planId': newPlanId});
-
-            devtools.log('New plan ID created and stored: $newPlanId');
-            fetchTravelPlanDetails();
-          }
-        } else {
-          devtools.log('User does not have a plan.');
-        }
-      } else {
-        devtools.log('User document does not exist.');
-      }
-    } catch (e) {
-      devtools.log('Error checking user plan: $e');
-    }
-  }
-
+  
   int _convertTimeToMinutes(String time) {
     try {
       final isPM = time.toLowerCase().contains('pm');

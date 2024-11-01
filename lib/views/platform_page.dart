@@ -165,16 +165,24 @@ class _PlatformPageState extends State<PlatformPage> {
                 top: Radius.circular(45),
               ),
               child: InkWell(
-                onTap: () {
+                onTap: () async {
                   if (showDestinations) {
-                    Navigator.of(context).push(
+                    final result = await Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (context) => PostDestinationPage()),
                     );
+
+                    if (result == true) {
+                      _fetchDestinationPosts();
+                    }
                   } else {
-                    Navigator.of(context).push(
+                    final result = await Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => PostPlanPage()),
                     );
+
+                    if (result == true) {
+                      _fetchPlanPosts();
+                    }
                   }
                 },
                 borderRadius: BorderRadius.vertical(

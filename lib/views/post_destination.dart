@@ -39,7 +39,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         return;
       }
 
-      const int maxSizeInBytes = 100 * 1024; // Target size 100 KB
+      const int maxSizeInBytes = 100 * 1024;
       int fileSize = await imageFile.length();
       devtools.log('File size: ${fileSize / (1024 * 1024)} MB');
 
@@ -65,7 +65,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
           // 4 MB - 18 MB
           quality = 40;
         } else {
-          quality = 10;
+          quality = 30;
         }
 
         try {
@@ -114,6 +114,23 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         _image == null ||
         _selectedTags.isEmpty) {
       devtools.log('Please fill all fields and upload an image.');
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Incomplete Information'),
+            content: Text('Please fill all fields and upload an image.'),
+            actions: [
+              // TextButton(
+              //   child: Text('OK'),
+              //   onPressed: () {
+              //     Navigator.of(context).pop();
+              //   },
+              // ),
+            ],
+          );
+        },
+      );
       return;
     }
 
@@ -156,7 +173,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
       });
       devtools.log('Image uploaded successfully and URL added to Firestore');
 
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (e) {
       devtools.log('Error uploading destination: $e');
     }
@@ -171,13 +188,19 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         backgroundColor: Colors.grey[200],
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.menu, color: const Color.fromARGB(255, 42, 42, 42)),
-          onPressed: () {},
+          icon: FaIcon(FontAwesomeIcons.angleLeft,
+              color: const Color.fromARGB(255, 42, 42, 42)),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
         ),
         actions: [
           IconButton(
-            icon:
-                Icon(Icons.check, color: const Color.fromARGB(255, 42, 42, 42)),
+            icon: FaIcon(
+              Icons.check,
+              color: const Color.fromARGB(255, 42, 42, 42),
+              size: 30.0,
+            ),
             onPressed: () {
               _uploadDestination();
               devtools.log('Upload destination');
