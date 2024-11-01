@@ -147,6 +147,20 @@ class _PlatformPageState extends State<PlatformPage> {
                   ),
                 ],
               ),
+              Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color.fromARGB(255, 63, 63, 63)
+                          .withOpacity(0.1),
+                      spreadRadius: 2,
+                      blurRadius: 4,
+                      offset: Offset(0, 1), // changes position of shadow
+                    ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: showDestinations
                     ? _buildDestinationPosts()

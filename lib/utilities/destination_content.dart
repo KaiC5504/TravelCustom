@@ -65,6 +65,27 @@ class DestinationContent {
     }
   }
 
+  Future<String?> getAuthorName(String authorId) async {
+    try {
+      DocumentSnapshot authorDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(authorId)
+          .get();
+
+      if (authorDoc.exists) {
+        String authorName = authorDoc['name'] as String? ?? 'Unknown';
+        devtools.log('Author name(content): $authorName');
+        return authorName;
+      } else {
+        devtools.log('Author not found in users collection');
+        return 'Unknown';
+      }
+    } catch (e) {
+      devtools.log('Error fetching author name: $e');
+      return 'Unknown';
+    }
+  }
+
   Future<Uint8List?> getDestinationImage(String destinationId) async {
     try {
       final ref = FirebaseStorage.instance
@@ -79,6 +100,46 @@ class DestinationContent {
         devtools.log('Error fetching image for $destinationId: $e');
         return null;
       }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchReviews(String destinationId) async {
+    try {
+      final reviewsSnapshot = await FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(destinationId)
+          .collection('reviews')
+          .orderBy('review_date', descending: true)
+          .limit(10)
+          .get();
+
+      // Convert the documents to a list of maps for easier usage
+      devtools.log('Reviews fetched successfully');
+      return reviewsSnapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      devtools.log('Error fetching reviews: $e');
+      return [];
+    }
+  }
+
+  Future<String?> getUserName(String userId) async {
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        String userName = userDoc['name'] as String? ?? 'Unknown';
+        devtools.log('Fetched user name: $userName');
+        return userName;
+      } else {
+        devtools.log('User not found in users collection');
+        return 'Unknown';
+      }
+    } catch (e) {
+      devtools.log('Error fetching user name: $e');
+      return 'Unknown';
     }
   }
 

@@ -25,6 +25,8 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
   bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};
   Uint8List? destinationImageData;
+  String? _authorName;
+  List<Map<String, dynamic>> _reviews = [];
 
   @override
   void initState() {
@@ -32,6 +34,24 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     _isFavourited = widget.isFavourited;
     _checkIfFavourited();
     _fetchDestinationImage();
+    _fetchDestinationaAuthor();
+    _fetchReviews();
+  }
+
+  Future<void> _fetchDestinationaAuthor() async {
+    try {
+      final destinationDoc =
+          await _destinationContent.getDestinationDetails(widget.destinationId);
+      final data = destinationDoc.data() as Map<String, dynamic>;
+      final authorId = data['author'] as String?;
+
+      if (authorId != null) {
+        _authorName = await _destinationContent.getAuthorName(authorId);
+        setState(() {});
+      }
+    } catch (e) {
+      devtools.log('Error fetching destination or author details: $e');
+    }
   }
 
   void _fetchDestinationImage() async {
@@ -39,6 +59,27 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     destinationImageData =
         await _destinationContent.getDestinationImage(widget.destinationId);
     setState(() {}); // Trigger a rebuild to display the image
+  }
+
+  Future<void> _fetchReviews() async {
+    try {
+      final reviews =
+          await _destinationContent.fetchReviews(widget.destinationId);
+
+      // Loop through each review and fetch the user name based on userId
+      for (var review in reviews) {
+        final userId = review['userId'] as String;
+        final userName = await _destinationContent.getUserName(userId);
+        review['userName'] =
+            userName ?? 'Unknown'; // Add the user name to the review map
+      }
+
+      setState(() {
+        _reviews = reviews; // Update state with reviews that include user names
+      });
+    } catch (e) {
+      devtools.log('Error fetching reviews with user names: $e');
+    }
   }
 
   void _checkIfFavourited() async {
@@ -54,8 +95,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
       _isFavourited = !_isFavourited;
     });
   }
-
-  String? _authorName;
 
   Future<DocumentSnapshot> _getDestinationDetails() {
     return _destinationContent.getDestinationDetails(widget.destinationId);
@@ -113,7 +152,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
               child: CircularProgressIndicator(),
             );
           }
-          devtools.log('authorName: $_authorName');
+          devtools.log('authorName(page): $_authorName');
 
           if (snapshot.hasError) {
             return const Center(child: Text('Error loading details'));
@@ -182,7 +221,98 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
+
+                // Horizontal Scrollable Reviews Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Rating: ",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 120, // Set height for the review cards
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _reviews.length,
+                          itemBuilder: (context, index) {
+                            final review = _reviews[index];
+                            return GestureDetector(
+                              onTap: () {
+                                // Handle tap on review
+                              },
+                              child: Container(
+                                width: 200,
+                                margin: const EdgeInsets.only(right: 10),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color.fromARGB(
+                                              255, 121, 121, 121)
+                                          .withOpacity(0.1),
+                                      spreadRadius: 1,
+                                      blurRadius: 3,
+                                      offset: const Offset(0,
+                                          3), // Only shadow for bottom, left, and right
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      review['userName'] ??
+                                          'Anonymous', // Display reviewer ID
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      review['review_content'] ??
+                                          'No review', // Display review text
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Row(
+                                      children: [
+                                        const Text('Rating:'),
+                                        const SizedBox(width: 5),
+                                        Text(review['rating']
+                                            .toString()), // Display rating
+                                        const Icon(
+                                          Icons.star,
+                                          color: Colors.yellow,
+                                          size: 16,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 40),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -232,21 +362,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                     ),
                     const SizedBox(height: 15),
                     const Text(
-                      'Average Rating:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      destinationData['average_rating']?.toString() ?? '-',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
                       'Number of Reviews:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -255,7 +370,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      destinationData['number_of_reviews']?.toString() ?? '-',
+                      _reviews.length.toString(),
                       style: const TextStyle(
                         fontSize: 16,
                       ),
