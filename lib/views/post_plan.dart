@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:timeline_tile/timeline_tile.dart';
 import 'dart:developer' as devtools show log;
 
 class PostPlanPage extends StatefulWidget {
@@ -17,7 +16,7 @@ class PostPlanPage extends StatefulWidget {
 class _PostPlanPageState extends State<PostPlanPage> {
   final TextEditingController _nameController = TextEditingController();
   String planName = '';
-  List<Map<String, dynamic>> activities = [];
+  List<Map<String, dynamic>> days = [];
   Map<String, String> destinationNames = {};
   bool isLoading = true;
 
@@ -51,16 +50,12 @@ class _PostPlanPageState extends State<PostPlanPage> {
             userPlanDoc.data() as Map<String, dynamic>;
         devtools.log('Fetched Plan data');
 
-        List<Map<String, dynamic>> fetchedActivities =
-            List<Map<String, dynamic>>.from(planData['activities'] ?? []);
-
-        // Fetch destination names for any destinationIds
-        await fetchDestinationNames(fetchedActivities);
+        List<Map<String, dynamic>> fetchedDays =
+            List<Map<String, dynamic>>.from(planData['days'] ?? []);
 
         setState(() {
           planName = planData['plan_name'] ?? 'Untitled Plan';
-          activities =
-              List<Map<String, dynamic>>.from(planData['activities'] ?? []);
+          days = fetchedDays;
           isLoading = false;
         });
       } else {
@@ -243,16 +238,42 @@ class _PostPlanPageState extends State<PostPlanPage> {
                       borderRadius: BorderRadius.circular(15.0),
                       border: Border.all(color: Colors.grey.shade400),
                     ),
-                    child: activities.isEmpty
-                        ? Text('No activities in Travel Plan')
+                    child: days.isEmpty
+                        ? Text('No days in Travel Plan')
                         : Column(
-                            children: activities.map((activity) {
-                              String displayDestination =
-                                  destinationNames[activity['destination']] ??
-                                      activity['destination'];
-                              return _buildMiniTimelineItem(
-                                activity['time'] ?? 'No time',
-                                displayDestination,
+                            children: days.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              Map<String, dynamic> day = entry.value;
+                              String dayTitle = day['day_title'] ?? '-';
+                              List<String> sideNotes =
+                                  List<String>.from(day['side_note'] ?? []);
+                              String dayNumber = (index + 1).toString();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildMiniTimelineItem('Day $dayNumber'),
+                                  SizedBox(height: 5),
+                                  // Day Title with Indicator
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 18.0, top: 4.0),
+                                    child: Text(dayTitle,
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16)),
+                                  ),
+                                  SizedBox(height: 3),
+                                  // List of side notes under each day
+                                  ...sideNotes.map((note) => Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 18.0, top: 4.0, bottom: 4.0),
+                                        child: Text(note),
+                                      )),
+                                  if (index != days.length - 1)
+                                    Divider(
+                                        thickness: 1,
+                                        color: Colors.grey.shade300),
+                                ],
                               );
                             }).toList(),
                           ),
@@ -263,58 +284,30 @@ class _PostPlanPageState extends State<PostPlanPage> {
     );
   }
 
-  Widget _buildMiniTimelineItem(String time, String title) {
+  Widget _buildMiniTimelineItem(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TimelineTile(
-        alignment: TimelineAlign.manual,
-        lineXY: 0.3,
-        isFirst: false,
-        isLast: false,
-        indicatorStyle: IndicatorStyle(
-          width: 20,
-          color: const Color.fromARGB(255, 135, 139, 227),
-          padding: EdgeInsets.all(6),
-        ),
-        beforeLineStyle: LineStyle(
-          color: Color.fromARGB(255, 127, 127, 127),
-          thickness: 4,
-        ),
-        afterLineStyle: LineStyle(
-          color: const Color.fromARGB(255, 127, 127, 127),
-          thickness: 4,
-        ),
-        // Time
-        startChild: Container(
-          alignment: Alignment.centerRight,
-          width: 60,
-          child: Text(
-            time,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Purple Indicator
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 135, 139, 227),
+              shape: BoxShape.circle,
+            ),
           ),
-        ),
-        // Activity Title
-        endChild: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          SizedBox(width: 8),
+          // Title Text
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

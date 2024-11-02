@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
+import 'package:travelcustom/views/planning.dart';
 import 'package:travelcustom/views/platform_page.dart';
 import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
-import 'package:travelcustom/views/travel_plan_view.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   const CustomBottomNavigationBar({super.key});
@@ -88,7 +88,7 @@ class NavigationController extends GetxController {
   final screens = [
     const TravelView(),
     const PlatformPage(),
-    const TravelPlanView(),
+    const PlanningView(),
     const ProfilePage(),
   ];
 }

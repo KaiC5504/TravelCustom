@@ -4,12 +4,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:typed_data';
 import 'package:travelcustom/utilities/platform_post.dart';
 import 'package:travelcustom/views/destination_detail.dart';
+import 'package:travelcustom/views/planning.dart';
 import 'package:travelcustom/views/post_destination.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:travelcustom/views/post_plan.dart';
 import 'dart:developer' as devtools show log;
-
-import 'package:travelcustom/views/travel_plan_view.dart';
 
 class PlatformPage extends StatefulWidget {
   const PlatformPage({super.key});
@@ -330,7 +329,7 @@ class _PlatformPageState extends State<PlatformPage> {
               itemBuilder: (context, index) {
                 var post = planPosts[index];
                 Uint8List? profilePicture = planProfilePictures[post['userId']];
-                List<dynamic> activities = post['activities'];
+                List<dynamic> days = post['days'];
                 String timeAgo =
                     timeago.format((post['postDate'] as Timestamp).toDate());
 
@@ -345,7 +344,7 @@ class _PlatformPageState extends State<PlatformPage> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => TravelPlanView(
+                              builder: (context) => PlanningView(
                                 planId: post['planId'],
                                 collectionName: 'platform_plans',
                               ),
@@ -392,38 +391,42 @@ class _PlatformPageState extends State<PlatformPage> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Display day titles and side notes for each day
                                   for (var i = 0;
-                                      i <
-                                          (activities.length > 3
-                                              ? 3
-                                              : activities.length);
+                                      i < (days.length > 3 ? 3 : days.length);
                                       i++)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 4.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            destinationNames.containsKey(
-                                                    activities[i]
-                                                        ['destination'])
-                                                ? destinationNames[activities[i]
-                                                    ['destination']]!
-                                                : activities[i]['destination'],
-                                            style: TextStyle(fontSize: 16.0),
-                                          ),
-                                          Text(
-                                            activities[i]['time'],
+                                            days[i]['dayTitle'] ?? 'No Title',
                                             style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 14.0),
+                                                fontSize: 16.0,
+                                                fontWeight: FontWeight.bold),
                                           ),
+                                          SizedBox(height: 4.0),
+                                          ...days[i]['sideNotes']
+                                              .take(2)
+                                              .map((note) => Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            top: 2.0),
+                                                    child: Text(
+                                                      note,
+                                                      style: TextStyle(
+                                                          fontSize: 14.0,
+                                                          color:
+                                                              Colors.grey[700]),
+                                                    ),
+                                                  )),
                                         ],
                                       ),
                                     ),
-                                  if (activities.length > 3)
+                                  if (days.length > 3)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 4.0),

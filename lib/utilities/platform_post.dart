@@ -167,13 +167,28 @@ class PlatformPostsContent {
         }
         profilePictures[userId] = profileBytes;
 
+        // Fetch and process days data
+        List<Map<String, dynamic>> daysData = [];
+        if (planData['days'] != null) {
+          List<Map<String, dynamic>> days =
+              List<Map<String, dynamic>>.from(planData['days']);
+          for (var day in days) {
+            String dayTitle = day['day_title'] ?? 'No Title';
+            List<String> sideNotes = List<String>.from(day['side_note'] ?? []);
+            daysData.add({
+              'dayTitle': dayTitle,
+              'sideNotes': sideNotes,
+            });
+          }
+        }
+
         // Add plan data to the list of plan posts
         planPosts.add({
           'planId': planDoc.id,
           'planName': planData['plan_name'],
           'userId': userId,
           'authorName': userData['name'],
-          'activities': planData['activities'],
+          'days': daysData,
           'postDate': planData['post_date'],
         });
       }
