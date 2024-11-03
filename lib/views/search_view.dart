@@ -29,6 +29,12 @@ class _SearchPageState extends State<SearchPage> {
     _fetchDestinations();
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
     QuerySnapshot snapshot =
@@ -60,18 +66,22 @@ class _SearchPageState extends State<SearchPage> {
       }
     }
 
-    setState(() {
-      localDestination = fetchedDestinations;
-    });
+    if (mounted) {
+      setState(() {
+        localDestination = fetchedDestinations;
+      });
+    }
   }
 
   // Handle debounced search input
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
-      setState(() {
-        searchQuery = query;
-      });
+      if (mounted) {
+        setState(() {
+          searchQuery = query;
+        });
+      }
     });
   }
 
@@ -103,12 +113,6 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     return filteredList;
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
   }
 
   @override

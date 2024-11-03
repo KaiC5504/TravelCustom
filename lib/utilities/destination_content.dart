@@ -103,6 +103,23 @@ class DestinationContent {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchSubDestinations(
+      String destinationId) async {
+    try {
+      final subDestinationsSnapshot = await FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(destinationId)
+          .collection('sub_destinations')
+          .get();
+
+      devtools.log('Sub-destinations fetched successfully');
+      return subDestinationsSnapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      devtools.log('Error fetching sub-destinations: $e');
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchReviews(String destinationId) async {
     try {
       final reviewsSnapshot = await FirebaseFirestore.instance

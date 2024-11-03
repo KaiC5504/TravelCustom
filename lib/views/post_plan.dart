@@ -15,7 +15,9 @@ class PostPlanPage extends StatefulWidget {
 
 class _PostPlanPageState extends State<PostPlanPage> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _costController = TextEditingController();
   String planName = '';
+  String cost = '';
   List<Map<String, dynamic>> days = [];
   Map<String, String> destinationNames = {};
   bool isLoading = true;
@@ -29,6 +31,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _costController.dispose();
     super.dispose();
   }
 
@@ -98,13 +101,13 @@ class _PostPlanPageState extends State<PostPlanPage> {
     }
   }
 
-  void _showEmptyNameDialog() {
+  void _emptyFieldsDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Center(child: Text('No name')),
-          content: Text('Please enter a name for your travel plan.'),
+          title: Center(child: Text('Fields not complete')),
+          content: Text('Please fill in all fields'),
           actions: [
             // TextButton(
             //   onPressed: () {
@@ -120,9 +123,10 @@ class _PostPlanPageState extends State<PostPlanPage> {
 
   Future<void> _uploadPlan() async {
     String planName = _nameController.text.trim();
+    String cost = _costController.text.trim();
 
-    if (planName.isEmpty) {
-      _showEmptyNameDialog();
+    if (planName.isEmpty || cost.isEmpty) {
+      _emptyFieldsDialog();
       return;
     }
 
@@ -202,7 +206,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Name of Plan',
+              'Plan Name',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16.0,
@@ -220,7 +224,27 @@ class _PostPlanPageState extends State<PostPlanPage> {
                 fillColor: Colors.white,
               ),
             ),
-            SizedBox(height: 24.0),
+            SizedBox(height: 20.0),
+            Text(
+              'Estimated Cost',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16.0,
+              ),
+            ),
+            SizedBox(height: 8.0),
+            TextField(
+              controller: _costController,
+              decoration: InputDecoration(
+                hintText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            SizedBox(height: 25.0),
             Text(
               'Preview Travel Plan',
               style: TextStyle(

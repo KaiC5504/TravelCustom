@@ -381,7 +381,7 @@ Widget _buildPlanDays(String day, String title, List<String> sideNotes) {
     children: [
       // Day label on the left
       Expanded(
-        flex: 1,
+        flex: 2,
         child: Center(
           child: Text(
             day,

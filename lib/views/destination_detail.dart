@@ -21,37 +21,17 @@ class DestinationDetailPage extends StatefulWidget {
 
 class _DestinationDetailPageState extends State<DestinationDetailPage> {
   final DestinationContent _destinationContent = DestinationContent();
-  bool _isFavourited = false;
+  final ValueNotifier<bool> _isFavoritedNotifier = ValueNotifier<bool>(false);
   bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};
   Uint8List? destinationImageData;
-  String? _authorName;
-  List<Map<String, dynamic>> _reviews = [];
+  final ValueNotifier<int> _reviewCountNotifier = ValueNotifier<int>(0);
 
   @override
   void initState() {
     super.initState();
-    _isFavourited = widget.isFavourited;
     _checkIfFavourited();
     _fetchDestinationImage();
-    _fetchDestinationaAuthor();
-    _fetchReviews();
-  }
-
-  Future<void> _fetchDestinationaAuthor() async {
-    try {
-      final destinationDoc =
-          await _destinationContent.getDestinationDetails(widget.destinationId);
-      final data = destinationDoc.data() as Map<String, dynamic>;
-      final authorId = data['author'] as String?;
-
-      if (authorId != null) {
-        _authorName = await _destinationContent.getAuthorName(authorId);
-        setState(() {});
-      }
-    } catch (e) {
-      devtools.log('Error fetching destination or author details: $e');
-    }
   }
 
   void _fetchDestinationImage() async {
@@ -61,43 +41,17 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     setState(() {}); // Trigger a rebuild to display the image
   }
 
-  Future<void> _fetchReviews() async {
-    try {
-      final reviews =
-          await _destinationContent.fetchReviews(widget.destinationId);
-
-      // Loop through each review and fetch the user name based on userId
-      for (var review in reviews) {
-        final userId = review['userId'] as String;
-        final userName = await _destinationContent.getUserName(userId);
-        review['userName'] =
-            userName ?? 'Unknown'; // Add the user name to the review map
-      }
-
-      setState(() {
-        _reviews = reviews; // Update state with reviews that include user names
-      });
-    } catch (e) {
-      devtools.log('Error fetching reviews with user names: $e');
-    }
-  }
-
-  void _checkIfFavourited() async {
-    _isFavourited =
+  Future<void> _checkIfFavourited() async {
+    bool isFavorited =
         await _destinationContent.checkIfFavourited(widget.destinationId);
-    setState(() {});
+    _isFavoritedNotifier.value = isFavorited;
   }
 
   void _toggleFavourite() async {
+    bool newFavoritedState = !_isFavoritedNotifier.value;
     await _destinationContent.toggleFavourite(
-        widget.destinationId, !_isFavourited);
-    setState(() {
-      _isFavourited = !_isFavourited;
-    });
-  }
-
-  Future<DocumentSnapshot> _getDestinationDetails() {
-    return _destinationContent.getDestinationDetails(widget.destinationId);
+        widget.destinationId, newFavoritedState);
+    _isFavoritedNotifier.value = newFavoritedState;
   }
 
   void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
@@ -134,6 +88,10 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     }
   }
 
+  Future<DocumentSnapshot> _getDestinationDetails() {
+    return _destinationContent.getDestinationDetails(widget.destinationId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,7 +110,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
               child: CircularProgressIndicator(),
             );
           }
-          devtools.log('authorName(page): $_authorName');
 
           if (snapshot.hasError) {
             return const Center(child: Text('Error loading details'));
@@ -206,22 +163,30 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       ),
                       Align(
                         alignment: Alignment.topRight,
-                        child: IconButton(
-                          onPressed: _toggleFavourite,
-                          icon: FaIcon(
-                            FontAwesomeIcons.solidStar,
-                            color: _isFavourited
-                                ? Colors.yellow
-                                : const Color.fromARGB(255, 169, 169, 169)
-                                    .withOpacity(0.7),
-                            size: 36.0,
-                          ),
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isFavoritedNotifier,
+                          builder: (context, isFavourited, child) {
+                            return IconButton(
+                              onPressed: _toggleFavourite,
+                              icon: FaIcon(
+                                FontAwesomeIcons.solidStar,
+                                color: isFavourited
+                                    ? Colors.yellow
+                                    : const Color.fromARGB(255, 169, 169, 169)
+                                        .withOpacity(0.7),
+                                size: 36.0,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                SubDestinationsWidget(destinationId: widget.destinationId),
+                const SizedBox(height: 13),
 
                 // Horizontal Scrollable Reviews Section
                 Padding(
@@ -235,78 +200,13 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
-                      SizedBox(
-                        height: 120, // Set height for the review cards
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _reviews.length,
-                          itemBuilder: (context, index) {
-                            final review = _reviews[index];
-                            return GestureDetector(
-                              onTap: () {
-                                // Handle tap on review
-                              },
-                              child: Container(
-                                width: 200,
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color.fromARGB(
-                                              255, 121, 121, 121)
-                                          .withOpacity(0.1),
-                                      spreadRadius: 1,
-                                      blurRadius: 3,
-                                      offset: const Offset(0,
-                                          3), // Only shadow for bottom, left, and right
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      review['userName'] ??
-                                          'Anonymous', // Display reviewer ID
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      review['review_content'] ??
-                                          'No review', // Display review text
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Row(
-                                      children: [
-                                        const Text('Rating:'),
-                                        const SizedBox(width: 5),
-                                        Text(review['rating']
-                                            .toString()), // Display rating
-                                        const Icon(
-                                          Icons.star,
-                                          color: Colors.yellow,
-                                          size: 16,
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                      ReviewsWidget(
+                        destinationId: widget.destinationId,
+                        destinationContent: _destinationContent,
+                        onReviewsLoaded: (reviewCount) {
+                          _reviewCountNotifier.value =
+                              reviewCount; // Directly update the ValueNotifier
+                        },
                       ),
                     ],
                   ),
@@ -369,11 +269,14 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text(
-                      _reviews.length.toString(),
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _reviewCountNotifier,
+                      builder: (context, reviewCount, child) {
+                        return Text(
+                          reviewCount.toString(),
+                          style: const TextStyle(fontSize: 16),
+                        );
+                      },
                     ),
                     const SizedBox(height: 15),
                     const Text(
@@ -408,11 +311,9 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text(
-                      _authorName ?? 'Unknown',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                    AuthorNameWidget(
+                      destinationId: widget.destinationId,
+                      destinationContent: _destinationContent,
                     ),
                     const SizedBox(height: 15),
                   ],
@@ -429,6 +330,307 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
           );
         },
       ),
+    );
+  }
+}
+
+class SubDestinationsWidget extends StatefulWidget {
+  final String destinationId;
+
+  const SubDestinationsWidget({required this.destinationId, super.key});
+
+  @override
+  State<SubDestinationsWidget> createState() => _SubDestinationsWidgetState();
+}
+
+class _SubDestinationsWidgetState extends State<SubDestinationsWidget> {
+  List<Map<String, dynamic>> _subDestinations = [];
+  bool _isLoadingSubDestinations = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSubDestinations();
+  }
+
+  Future<void> _fetchSubDestinations() async {
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      // Assuming _destinationContent is accessible here, or pass it as a dependency
+      _subDestinations =
+          await DestinationContent().fetchSubDestinations(widget.destinationId);
+      if (mounted) {
+        setState(() {
+          _isLoadingSubDestinations = false;
+        });
+      }
+    } catch (e) {
+      devtools.log('Error fetching sub-destinations: $e');
+      setState(() {
+        _isLoadingSubDestinations = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Popular Locations:",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 170,
+            child: _isLoadingSubDestinations
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _subDestinations.length,
+                    itemBuilder: (context, index) {
+                      final subDest = _subDestinations[index];
+                      return Container(
+                        width: 230,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  subDest['image'] ?? '',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Center(child: Text('No Image')),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4, horizontal: 8),
+                                color: Colors.black.withOpacity(0.5),
+                                child: Text(
+                                  subDest['name'] ?? '',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FavoriteButton extends StatelessWidget {
+  final ValueNotifier<bool> isFavoritedNotifier;
+  final String destinationId;
+  final DestinationContent destinationContent;
+
+  const FavoriteButton({
+    super.key,
+    required this.isFavoritedNotifier,
+    required this.destinationId,
+    required this.destinationContent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isFavoritedNotifier,
+      builder: (context, isFavorited, _) {
+        return IconButton(
+          onPressed: () async {
+            await destinationContent.toggleFavourite(
+                destinationId, !isFavorited);
+            isFavoritedNotifier.value = !isFavorited;
+          },
+          icon: Icon(
+            isFavorited ? Icons.star : Icons.star_border,
+            color: isFavorited ? Colors.yellow : Colors.grey,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class AuthorNameWidget extends StatelessWidget {
+  final String destinationId;
+  final DestinationContent destinationContent;
+
+  const AuthorNameWidget({
+    super.key,
+    required this.destinationId,
+    required this.destinationContent,
+  });
+
+  Future<String?> _fetchAuthorName() async {
+    try {
+      final destinationDoc =
+          await destinationContent.getDestinationDetails(destinationId);
+      final data = destinationDoc.data() as Map<String, dynamic>;
+      final authorId = data['author'] as String?;
+
+      if (authorId != null) {
+        return await destinationContent.getAuthorName(authorId);
+      }
+    } catch (e) {
+      devtools.log('Error fetching author name: $e');
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _fetchAuthorName(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator(); // Loading indicator
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return Text('Unknown');
+        }
+        return Text(snapshot.data!);
+      },
+    );
+  }
+}
+
+class ReviewsWidget extends StatelessWidget {
+  final String destinationId;
+  final DestinationContent destinationContent;
+  final Function(int) onReviewsLoaded;
+
+  const ReviewsWidget({
+    super.key,
+    required this.destinationId,
+    required this.destinationContent,
+    required this.onReviewsLoaded,
+  });
+
+  Future<List<Map<String, dynamic>>> _fetchReviews() async {
+    try {
+      final reviews = await destinationContent.fetchReviews(destinationId);
+      for (var review in reviews) {
+        final userId = review['userId'] as String;
+        final userName = await destinationContent.getUserName(userId);
+        review['userName'] = userName ?? 'Unknown';
+      }
+      onReviewsLoaded(reviews.length);
+      return reviews;
+    } catch (e) {
+      devtools.log('Error fetching reviews: $e');
+      onReviewsLoaded(0);
+      return [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchReviews(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return Text('No reviews available');
+        }
+
+        final reviews = snapshot.data!;
+        return SizedBox(
+          height: 120, // Set height for the review cards
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return Container(
+                width: 200,
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review['userName'] ?? 'Anonymous',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      review['review_content'] ?? 'No review',
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Text('Rating:'),
+                        const SizedBox(width: 5),
+                        Text(review['rating'].toString()),
+                        const Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
