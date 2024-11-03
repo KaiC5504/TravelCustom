@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
+import 'package:travelcustom/views/planning.dart';
+import 'package:travelcustom/views/platform_page.dart';
 import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
-import 'package:travelcustom/views/travel_plan_view.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   const CustomBottomNavigationBar({super.key});
@@ -13,6 +14,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
     final controller = Get.put(NavigationController());
 
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       bottomNavigationBar: Obx(
         () => Padding(
           padding: const EdgeInsets.only(
@@ -45,14 +47,14 @@ class CustomBottomNavigationBar extends StatelessWidget {
                   onPressed: () => controller.selectedIndex.value = 0,
                 ),
                 IconButton(
-                  icon: FaIcon(FontAwesomeIcons.map,
+                  icon: FaIcon(FontAwesomeIcons.earthAsia,
                       color: controller.selectedIndex.value == 1
                           ? Colors.white
                           : Colors.grey),
                   onPressed: () => controller.selectedIndex.value = 1,
                 ),
                 IconButton(
-                  icon: FaIcon(FontAwesomeIcons.file,
+                  icon: FaIcon(FontAwesomeIcons.map,
                       color: controller.selectedIndex.value == 2
                           ? Colors.white
                           : Colors.grey),
@@ -70,7 +72,12 @@ class CustomBottomNavigationBar extends StatelessWidget {
           ),
         ),
       ),
-      body: Obx(() => controller.screens[controller.selectedIndex.value]),
+      body: Obx(
+        () => IndexedStack(
+          index: controller.selectedIndex.value,
+          children: controller.screens,
+        ),
+      ),
     );
   }
 }
@@ -80,10 +87,8 @@ class NavigationController extends GetxController {
 
   final screens = [
     const TravelView(),
-    const TravelPlanView(),
-    Container(
-      color: Colors.white,
-    ),
+    const PlatformPage(),
+    const PlanningView(),
     const ProfilePage(),
   ];
 }

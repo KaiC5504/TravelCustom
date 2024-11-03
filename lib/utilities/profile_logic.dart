@@ -6,9 +6,51 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'dart:developer' as devtools show log;
 
 class UserProfileMethods {
+  // Retrieve cached image if it exists
+  static Future<File?> getCachedImage(String imageName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = p.join(directory.path, imageName);
+    final file = File(path);
+    return await file.exists() ? file : null;
+  }
+
+  // Save image to local storage
+  static Future<File> saveImageLocally(
+      Uint8List imageBytes, String imageName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = p.join(directory.path, imageName);
+    final file = File(path);
+    return file.writeAsBytes(imageBytes);
+  }
+
+  // Update `getAvatarForProfile` to check the cache first
+  static Future<Uint8List?> getAvatarForProfile(String userId) async {
+    File? cachedImage = await getCachedImage('$userId.webp');
+    if (cachedImage != null) {
+      return await cachedImage.readAsBytes();
+    } else {
+      try {
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('profile_pictures/$userId.webp');
+        Uint8List? imageBytes = await ref.getData(100000000);
+        if (imageBytes != null) {
+          await saveImageLocally(
+              imageBytes, '$userId.webp'); // Cache downloaded image
+        }
+        return imageBytes;
+      } catch (e) {
+        devtools.log('Error fetching image: $e');
+        return null;
+      }
+    }
+  }
+
   static Future<void> loadUserData({
     required String? userId,
     required Function(String, String, String, String, String, Uint8List?)
@@ -109,11 +151,14 @@ class UserProfileMethods {
       }
 
       if (imageFile != null) {
-        String uniqueFileName = '$userId.png';
+        String uniqueFileName = '$userId.webp';
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('profile_pictures/$uniqueFileName');
         await storageRef.putFile(imageFile);
+
+        final imageBytes = await imageFile.readAsBytes();
+        await UserProfileMethods.saveImageLocally(imageBytes, uniqueFileName);
       }
 
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
@@ -144,19 +189,6 @@ class UserProfileMethods {
           );
         }
       }
-    }
-  }
-
-  static Future<Uint8List?> getAvatarForProfile(String userId) async {
-    try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('profile_pictures/$userId.png'); // Fetch based on user ID
-      Uint8List? imageBytes = await ref.getData(100000000);
-      return imageBytes;
-    } catch (e) {
-      devtools.log('Error fetching image: $e');
-      return null;
     }
   }
 }

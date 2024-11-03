@@ -57,7 +57,9 @@ class _LoginViewState extends State<LoginView> {
       appBar: AppBar(
         title: const Text('Login', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 162, 136, 222),
+        scrolledUnderElevation: 0,
       ),
+      backgroundColor: Colors.grey[200],
       body: Column(
         children: [
           Center(

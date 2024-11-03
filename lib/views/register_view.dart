@@ -32,13 +32,85 @@ class _RegisterViewState extends State<RegisterView> {
     super.dispose();
   }
 
+  Future<void> _registerUser() async {
+    final email = _email.text;
+    final password = _password.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      String errorMessage = 'Please fill in all fields';
+      displayCustomErrorMessage(context, errorMessage);
+      devtools.log('Empty fields');
+      return;
+    }
+
+    try {
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+      devtools.log(userCredential.toString());
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        String planId = await _createTravelPlan(user.uid);
+
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'email': email,
+          'password': password,
+          'name': '',
+          'planId': planId,
+          'favourites': [],
+        });
+
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          loginRoute,
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        devtools.log('Weak Password');
+        String errorMessage = 'Password needs to be at least 6 characters';
+        displayCustomErrorMessage(context, errorMessage);
+      } else if (e.code == 'email-already-in-use') {
+        devtools.log('Email Registered');
+        String errorMessage = 'Email already registered';
+        displayCustomErrorMessage(context, errorMessage);
+      } else if (e.code == 'invalid-email') {
+        devtools.log('Invalid Email');
+        String errorMessage = 'Invalid email format';
+        displayCustomErrorMessage(context, errorMessage);
+      }
+    } catch (e) {
+      devtools.log('Error during registration: $e');
+    }
+  }
+
+  Future<String> _createTravelPlan(String userId) async {
+    try {
+      DocumentReference newPlanRef =
+          await FirebaseFirestore.instance.collection('travel_plans').add({
+        'days': [],
+        'end': Timestamp.now(),
+        'plan_name': '',
+        'start': Timestamp.now(),
+        'userId': userId,
+      });
+      devtools.log('New travel plan created with ID: ${newPlanRef.id}');
+      return newPlanRef.id;
+    } catch (e) {
+      devtools.log('Error creating travel plan: $e');
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 162, 136, 222),
+        scrolledUnderElevation: 0,
       ),
+      backgroundColor: Colors.grey[200],
       body: Column(
         children: [
           Center(
@@ -71,59 +143,7 @@ class _RegisterViewState extends State<RegisterView> {
 
           //register button
           ElevatedButton(
-            onPressed: () async {
-              final email = _email.text;
-              final password = _password.text;
-
-              if (email.isEmpty || password.isEmpty) {
-                String errorMessage = 'Please fill in all fields';
-                displayCustomErrorMessage(context, errorMessage);
-                devtools.log('Empty fields');
-                return;
-              }
-
-              try {
-                final userCredential = await FirebaseAuth.instance
-                    .createUserWithEmailAndPassword(
-                        email: email, password: password);
-                devtools.log(userCredential.toString());
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  loginRoute,
-                  (route) => false,
-                );
-
-                final user = FirebaseAuth.instance.currentUser;
-                if (user != null) {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(user.uid)
-                      .set(
-                    {
-                      'email': email,
-                      'password': password,
-                      'name': '',
-                      'planId': '',
-                      'favourites': [],
-                    },
-                  );
-                }
-              } on FirebaseAuthException catch (e) {
-                if (e.code == 'weak-password') {
-                  devtools.log('Weak Password');
-                  String errorMessage =
-                      'Password need to be at least 6 characters';
-                  displayCustomErrorMessage(context, errorMessage);
-                } else if (e.code == 'email-already-in-use') {
-                  String errorMessage = 'Email already registered';
-                  devtools.log('Email Registered');
-                  displayCustomErrorMessage(context, errorMessage);
-                } else if (e.code == 'invalid-email') {
-                  devtools.log('Invalid Email');
-                  String errorMessage = 'Invalid email format';
-                  displayCustomErrorMessage(context, errorMessage);
-                }
-              }
-            },
+            onPressed: _registerUser,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(255, 162, 136, 222),
               foregroundColor: Colors.white,

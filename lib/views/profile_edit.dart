@@ -51,11 +51,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   }
 
   Future<void> _pickImage() async {
+    // Attempt to pick an image from the gallery
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      // Crop the selected image using ImageCropper
+      // Attempt to crop the selected image
       CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: pickedFile.path,
         uiSettings: [
@@ -65,13 +66,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             toolbarColor: Colors.deepPurple,
             toolbarWidgetColor: Colors.white,
             hideBottomControls: true,
-            lockAspectRatio:
-                true, 
+            lockAspectRatio: true,
           ),
           IOSUiSettings(
             title: 'Crop Image',
             cropStyle: CropStyle.circle,
-            minimumAspectRatio: 1.0,
           ),
         ],
       );
@@ -92,10 +91,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           'Edit Profile',
           style: TextStyle(color: Colors.black),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: Colors.grey[200],
+        scrolledUnderElevation: 0,
         centerTitle: true,
       ),
+      backgroundColor: Colors.grey[200],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
