@@ -155,6 +155,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
       Map<String, dynamic> travelPlanData =
           travelPlanDoc.data() as Map<String, dynamic>;
       travelPlanData['plan_name'] = planName;
+      travelPlanData['estimated_cost'] = cost;
       travelPlanData['post_date'] = Timestamp.now();
 
       // New Doc for platform_plans

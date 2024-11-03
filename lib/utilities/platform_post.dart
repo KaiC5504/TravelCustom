@@ -39,79 +39,81 @@ class PlatformPostsContent {
     List<Map<String, dynamic>> destinationPosts = [];
 
     try {
-      QuerySnapshot destinationSnapshot = await _firestore
-          .collection('destinations')
-          .orderBy('post_date', descending: true)
-          .get();
+      QuerySnapshot destinationSnapshot =
+          await _firestore.collection('destinations').get();
 
       for (var destinationDoc in destinationSnapshot.docs) {
-        var destinationData = destinationDoc.data() as Map<String, dynamic>;
-        String userId = destinationData['author'];
+        QuerySnapshot subDestinationsSnapshot = await destinationDoc.reference
+            .collection('sub_destinations')
+            .orderBy('post_date', descending: true)
+            .get();
 
-        // Fetch user details based on the author field
-        DocumentSnapshot userDoc =
-            await _firestore.collection('users').doc(userId).get();
-        var userData = userDoc.data() as Map<String, dynamic>;
+        for (var subDestinationDoc in subDestinationsSnapshot.docs) {
+          var subDestinationData =
+              subDestinationDoc.data() as Map<String, dynamic>;
+          String userId = subDestinationData['author'];
 
-        // Fetch profile picture with local caching
-        Uint8List? profileBytes;
-        File? cachedProfileImage = await getCachedImage('$userId.webp');
-        if (cachedProfileImage != null) {
-          profileBytes = await cachedProfileImage.readAsBytes();
-        } else {
-          try {
-            final ref = _storage.ref().child('profile_pictures/$userId.webp');
-            profileBytes = await ref.getData(100000000);
-            if (profileBytes != null) {
-              await saveImageLocally(profileBytes, '$userId.webp');
-            }
-          } catch (e) {
-            if (e is FirebaseException && e.code == 'object-not-found') {
-            } else {
-              devtools
-                  .log('Error fetching profile picture for user $userId: $e');
+          // Fetch user details based on the author field
+          DocumentSnapshot userDoc =
+              await _firestore.collection('users').doc(userId).get();
+          var userData = userDoc.data() as Map<String, dynamic>;
+
+          // Fetch profile picture with local caching
+          Uint8List? profileBytes;
+          File? cachedProfileImage = await getCachedImage('$userId.webp');
+          if (cachedProfileImage != null) {
+            profileBytes = await cachedProfileImage.readAsBytes();
+          } else {
+            try {
+              final ref = _storage.ref().child('profile_pictures/$userId.webp');
+              profileBytes = await ref.getData(100000000);
+              if (profileBytes != null) {
+                await saveImageLocally(profileBytes, '$userId.webp');
+              }
+            } catch (e) {
+              if (e is FirebaseException && e.code == 'object-not-found') {
+              } else {
+                devtools
+                    .log('Error fetching profile picture for user $userId: $e');
+              }
             }
           }
-        }
-        profilePictures[userId] = profileBytes;
+          profilePictures[userId] = profileBytes;
 
-        // Fetch destination image with local caching
-        Uint8List? destinationBytes;
-        File? cachedDestinationImage =
-            await getCachedImage('${destinationDoc.id}.webp');
-        if (cachedDestinationImage != null) {
-          destinationBytes = await cachedDestinationImage.readAsBytes();
-        } else {
-          try {
-            final ref = _storage
-                .ref()
-                .child('destination_images/${destinationDoc.id}.webp');
-            destinationBytes = await ref.getData(100000000);
-            if (destinationBytes != null) {
-              await saveImageLocally(
-                  destinationBytes, '${destinationDoc.id}.webp');
-            }
-          } catch (e) {
-            if (e is FirebaseException && e.code == 'object-not-found') {
-              devtools
-                  .log('No destination image found for ${destinationDoc.id}');
-            } else {
+          //Fetch sub-destination image with local caching
+          Uint8List? destinationBytes;
+          File? cachedDestinationImage =
+              await getCachedImage('${subDestinationDoc.id}.webp');
+          if (cachedDestinationImage != null) {
+            destinationBytes = await cachedDestinationImage.readAsBytes();
+          } else {
+            try {
+              final ref = _storage
+                  .ref()
+                  .child('destination_images/${subDestinationDoc.id}.webp');
+              destinationBytes = await ref.getData(100000000);
+              if (destinationBytes != null) {
+                await saveImageLocally(
+                    destinationBytes, '${subDestinationDoc.id}.webp');
+              }
+            } catch (e) {
               devtools.log(
-                  'Error fetching destination image for ${destinationDoc.id}: $e');
+                  'Error fetching destination image for ${subDestinationDoc.id}: $e');
             }
           }
-        }
-        destinationImages[destinationDoc.id] = destinationBytes;
+          destinationImages[subDestinationDoc.id] = destinationBytes;
 
-        // Combine destination and user data
-        destinationPosts.add({
-          'destinationId': destinationDoc.id,
-          'authorName': userData['name'],
-          'authorId': userId,
-          'destination': destinationData['destination'],
-          'averageRating': destinationData['average_rating'],
-          'postDate': destinationData['post_date'] ?? Timestamp.now(),
-        });
+          // Combine destination and user data
+          destinationPosts.add({
+            'destinationId': destinationDoc.id,
+            'subDestinationId': subDestinationDoc.id,
+            'authorName': userData['name'],
+            'authorId': userId,
+            'destination': subDestinationData['name'],
+            'description': subDestinationData['description'],
+            'postDate': subDestinationData['post_date'] ?? Timestamp.now(),
+          });
+        }
       }
     } catch (e) {
       devtools.log('Error fetching posts: $e');

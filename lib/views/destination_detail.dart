@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'package:travelcustom/utilities/navigation_bar.dart';
+import 'package:travelcustom/views/sub_destination.dart';
 import 'dart:developer' as devtools show log;
 
 class DestinationDetailPage extends StatefulWidget {
@@ -185,7 +186,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                 ),
                 const SizedBox(height: 20),
 
-                SubDestinationsWidget(destinationId: widget.destinationId),
+                SubDestinationsCard(destinationId: widget.destinationId),
                 const SizedBox(height: 13),
 
                 // Horizontal Scrollable Reviews Section
@@ -279,43 +280,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       },
                     ),
                     const SizedBox(height: 15),
-                    const Text(
-                      'Posted Date:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      destinationData['post_date'] != null
-                          ? (destinationData['post_date'] as Timestamp)
-                              .toDate()
-                              .toLocal()
-                              .toString()
-                              .split(' ')[0]
-                              .split('-')
-                              .reversed
-                              .join('-')
-                          : '-',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Author:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    AuthorNameWidget(
-                      destinationId: widget.destinationId,
-                      destinationContent: _destinationContent,
-                    ),
-                    const SizedBox(height: 15),
                   ],
                 ),
                 const SizedBox(height: 30),
@@ -329,122 +293,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class SubDestinationsWidget extends StatefulWidget {
-  final String destinationId;
-
-  const SubDestinationsWidget({required this.destinationId, super.key});
-
-  @override
-  State<SubDestinationsWidget> createState() => _SubDestinationsWidgetState();
-}
-
-class _SubDestinationsWidgetState extends State<SubDestinationsWidget> {
-  List<Map<String, dynamic>> _subDestinations = [];
-  bool _isLoadingSubDestinations = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchSubDestinations();
-  }
-
-  Future<void> _fetchSubDestinations() async {
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-      // Assuming _destinationContent is accessible here, or pass it as a dependency
-      _subDestinations =
-          await DestinationContent().fetchSubDestinations(widget.destinationId);
-      if (mounted) {
-        setState(() {
-          _isLoadingSubDestinations = false;
-        });
-      }
-    } catch (e) {
-      devtools.log('Error fetching sub-destinations: $e');
-      setState(() {
-        _isLoadingSubDestinations = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Popular Locations:",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 170,
-            child: _isLoadingSubDestinations
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _subDestinations.length,
-                    itemBuilder: (context, index) {
-                      final subDest = _subDestinations[index];
-                      return Container(
-                        width: 230,
-                        margin: const EdgeInsets.only(right: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              spreadRadius: 1,
-                              blurRadius: 3,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  subDest['image'] ?? '',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Center(child: Text('No Image')),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 4, horizontal: 8),
-                                color: Colors.black.withOpacity(0.5),
-                                child: Text(
-                                  subDest['name'] ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
       ),
     );
   }

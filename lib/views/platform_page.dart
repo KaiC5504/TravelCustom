@@ -252,7 +252,9 @@ class _PlatformPageState extends State<PlatformPage> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => DestinationDetailPage(
-                                  destinationId: post['destinationId']),
+                                destinationId: post['destinationId'],
+                                //subDestinationId: post['subDestinationId'],
+                              ),
                             ),
                           );
                         },
@@ -293,9 +295,9 @@ class _PlatformPageState extends State<PlatformPage> {
                                     fontSize: 16.0),
                               ),
                               SizedBox(height: 8.0),
-                              destinationImages[post['destinationId']] != null
+                              destinationImages[post['subDestinationId']] != null
                                   ? Image.memory(
-                                      destinationImages[post['destinationId']]!,
+                                      destinationImages[post['subDestinationId']]!,
                                       height: 200.0,
                                       width: double.infinity,
                                       fit: BoxFit.cover,

@@ -74,7 +74,6 @@ class DestinationContent {
 
       if (authorDoc.exists) {
         String authorName = authorDoc['name'] as String? ?? 'Unknown';
-        devtools.log('Author name(content): $authorName');
         return authorName;
       } else {
         devtools.log('Author not found in users collection');
@@ -110,6 +109,8 @@ class DestinationContent {
           .collection('destinations')
           .doc(destinationId)
           .collection('sub_destinations')
+          .orderBy('post_date',
+              descending: true) // Sort by post_date in descending order
           .get();
 
       devtools.log('Sub-destinations fetched successfully');

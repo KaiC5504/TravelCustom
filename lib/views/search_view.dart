@@ -17,6 +17,7 @@ class _SearchPageState extends State<SearchPage> {
   String searchQuery = '';
   String selectedSort = 'Rating';
   Timer? _debounce;
+  bool _isLoading = true;
 
   // Local list to store the fetched destinations
   List<Map<String, dynamic>> localDestination = [];
@@ -37,14 +38,17 @@ class _SearchPageState extends State<SearchPage> {
 
   // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
+    setState(() {
+      _isLoading = true;
+    });
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('destinations').get();
     List<Map<String, dynamic>> fetchedDestinations = snapshot.docs.map((doc) {
       return {
         'id': doc.id, // You can use this ID as a unique identifier
         'name': doc['destination'],
-        'rating': doc['average_rating'],
-        'popularity': doc['number_of_reviews'],
+        'rating': doc['average_rating'] ?? 0,
+        'popularity': doc['number_of_reviews'] ?? 0,
       };
     }).toList();
 
@@ -69,6 +73,7 @@ class _SearchPageState extends State<SearchPage> {
     if (mounted) {
       setState(() {
         localDestination = fetchedDestinations;
+        _isLoading = false;
       });
     }
   }
@@ -117,6 +122,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredDestinations = _filteredDestinations();
     return Scaffold(
       backgroundColor: Colors.grey[200],
       body: Padding(
@@ -251,94 +257,102 @@ class _SearchPageState extends State<SearchPage> {
             const SizedBox(height: 10),
 
             // ListView to display local data
-            Expanded(
-              child: _filteredDestinations().isEmpty
-                  ? Center(
-                      child: Text(
-                        'No Destination Found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _filteredDestinations().length,
-                      itemBuilder: (context, index) {
-                        var destination = _filteredDestinations()[index];
-                        String destinationId = destination['id'];
-                        Uint8List? destinationImage =
-                            destinationImages[destinationId];
-
-                        return GestureDetector(
-                          onTap: () {
-                            // Navigate to the detailed page when tapped
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => DestinationDetailPage(
-                                  destinationId: destinationId,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: Container(
-                              height: 200,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                color: Colors.grey[200],
-                                image: destinationImage != null
-                                    ? DecorationImage(
-                                        image: MemoryImage(destinationImage),
-                                        fit: BoxFit.cover,
-                                        colorFilter: ColorFilter.mode(
-                                          Colors.black.withOpacity(0.4),
-                                          BlendMode.darken,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      destination['name'] ??
-                                          'Unknown Destination',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'Rating: ${destination['rating']?.toString() ?? 'N/A'}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const Icon(Icons.star,
-                                            color: Colors.yellow, size: 18),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+            _isLoading
+                ? Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(),
                     ),
-            ),
+                  )
+                : _buildDestinationList(filteredDestinations),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDestinationList(
+      List<Map<String, dynamic>> filteredDestinations) {
+    return filteredDestinations.isEmpty
+        ? Center(
+            child: Text(
+              'No Destination Found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+        : Expanded(
+            child: ListView.builder(
+              itemCount: filteredDestinations.length,
+              itemBuilder: (context, index) {
+                var destination = filteredDestinations[index];
+                String destinationId = destination['id'];
+                Uint8List? destinationImage = destinationImages[destinationId];
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DestinationDetailPage(
+                          destinationId: destinationId,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.grey[200],
+                        image: destinationImage != null
+                            ? DecorationImage(
+                                image: MemoryImage(destinationImage),
+                                fit: BoxFit.cover,
+                                colorFilter: ColorFilter.mode(
+                                  Colors.black.withOpacity(0.4),
+                                  BlendMode.darken,
+                                ),
+                              )
+                            : null,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              destination['name'] ?? 'Unknown Destination',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Text(
+                                  'Rating: ${(destination['rating'] ?? 'N/A').toString()}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const Icon(Icons.star,
+                                    color: Colors.yellow, size: 18),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
   }
 }
