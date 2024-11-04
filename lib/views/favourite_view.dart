@@ -123,6 +123,7 @@ class _FavouritePageState extends State<FavouritePage> {
                       MaterialPageRoute(
                         builder: (context) => DestinationDetailPage(
                           destinationId: destinationId,
+                          subdestinationId: null,
                         ),
                       ),
                     );

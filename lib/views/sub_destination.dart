@@ -6,8 +6,10 @@ import 'dart:developer' as devtools show log;
 
 class SubDestinationsCard extends StatefulWidget {
   final String destinationId;
+  final String? initialSubDestinationId;
 
-  const SubDestinationsCard({super.key, required this.destinationId});
+  const SubDestinationsCard(
+      {super.key, required this.destinationId, this.initialSubDestinationId});
 
   @override
   State<SubDestinationsCard> createState() => _SubDestinationsCardState();
@@ -22,16 +24,29 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   void initState() {
     super.initState();
     _fetchSubDestinations();
+
+    if (widget.initialSubDestinationId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openInitialSubDestinationDialog();
+      });
+    }
+    devtools.log('Initial subdes id: ${widget.initialSubDestinationId}');
   }
 
   Future<void> _fetchSubDestinations() async {
     try {
       _subDestinations =
           await DestinationContent().fetchSubDestinations(widget.destinationId);
+          devtools.log('Sub-destinations: $_subDestinations');
       if (mounted) {
         setState(() {
           _isLoadingSubDestinations = false;
         });
+      }
+      // Open the dialog only after sub-destinations are fetched
+      if (widget.initialSubDestinationId != null) {
+        devtools.log('Opening initial subdes dialog');
+        _openInitialSubDestinationDialog();
       }
     } catch (e) {
       devtools.log('Error fetching sub-destinations: $e');
@@ -40,6 +55,22 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
           _isLoadingSubDestinations = false;
         });
       }
+    }
+  }
+
+  Future<void> _openInitialSubDestinationDialog() async {
+    final initialSubDes = _subDestinations.firstWhere(
+      (subDes) => subDes['id'] == widget.initialSubDestinationId,
+      orElse: () {
+        devtools.log('Sub-destination with ID ${widget.initialSubDestinationId} not found.');
+        return {};
+      },
+    );
+
+    if (initialSubDes.isNotEmpty) {
+      devtools.log('This is initial subdes $initialSubDes');
+      // Reuse the existing dialog method
+      await _showSubDestinationDetails(context, initialSubDes);
     }
   }
 

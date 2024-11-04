@@ -125,122 +125,136 @@ class _PlanningViewState extends State<PlanningView> {
           backgroundColor: Colors.grey[200],
           child: StatefulBuilder(
             builder: (context, setState) {
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                padding: const EdgeInsets.all(16.0), // Control overall padding
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Text(
-                        'Day $newDayNumber',
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 25),
+              double screenHeight = MediaQuery.of(context).size.height;
+              double screenWidth = MediaQuery.of(context).size.width;
 
-                    TextField(
-                      controller: dayTitleController,
-                      decoration: InputDecoration(
-                        labelText: 'Enter Day Title',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 30),
-
-                    Text('Add Locations or Side Notes'),
-                    SizedBox(height: 10),
-
-                    // Scrollable container for side notes
-                    SizedBox(
-                      height: 150, // Set a fixed height for the scrollable area
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: newSideNotes
-                              .map((note) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 4.0),
-                                    child: Container(
-                                      padding: EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(note),
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: screenHeight * 0.8,
+                  maxWidth: screenWidth * 0.9,
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            // Navigate to location search page (to be implemented)
-                            final location = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SearchPage(),
-                              ),
-                            );
-                            if (location != null) {
-                              setState(() {
-                                newSideNotes.add(location);
-                              });
-                            }
-                          },
-                          child: Text('Location'),
+                        Center(
+                          child: Text(
+                            'Day $newDayNumber',
+                            style: TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
                         ),
-                        ElevatedButton(
-                          onPressed: () {
-                            _addSideNote(context, setState, newSideNotes);
-                          },
-                          child: Text('Side Note'),
+                        SizedBox(height: 25),
+
+                        TextField(
+                          controller: dayTitleController,
+                          decoration: InputDecoration(
+                            labelText: 'Enter Day Title',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 30),
+
+                        Text('Add Locations or Side Notes'),
+                        SizedBox(height: 10),
+
+                        // Scrollable container for side notes
+                        SizedBox(
+                          height:
+                              150, // Set a fixed height for the scrollable area
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: newSideNotes
+                                  .map((note) => Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4.0),
+                                        child: Container(
+                                          padding: EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            border:
+                                                Border.all(color: Colors.grey),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Text(note),
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                // Navigate to location search page (to be implemented)
+                                final location = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SearchPage(),
+                                  ),
+                                );
+                                if (location != null) {
+                                  setState(() {
+                                    newSideNotes.add(location);
+                                  });
+                                }
+                              },
+                              child: Text('Location'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                _addSideNote(context, setState, newSideNotes);
+                              },
+                              child: Text('Side Note'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                String dayTitle =
+                                    dayTitleController.text.trim();
+                                if (dayTitle.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Please enter a title for the day.')),
+                                  );
+                                  return;
+                                }
+
+                                await _saveNewDayToFirestore(
+                                    newDayNumber, dayTitle, newSideNotes);
+                                Navigator.of(context).pop();
+                                await fetchTravelPlanDetails(); // Refresh the plan view
+                              },
+                              child: Text('Add'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            String dayTitle = dayTitleController.text.trim();
-                            if (dayTitle.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        'Please enter a title for the day.')),
-                              );
-                              return;
-                            }
-
-                            await _saveNewDayToFirestore(
-                                newDayNumber, dayTitle, newSideNotes);
-                            Navigator.of(context).pop();
-                            await fetchTravelPlanDetails(); // Refresh the plan view
-                          },
-                          child: Text('Add'),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               );
             },

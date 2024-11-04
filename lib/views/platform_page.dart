@@ -76,9 +76,9 @@ class _PlatformPageState extends State<PlatformPage> {
   void _toggleContent(bool showDestinations) {
     setState(() {
       this.showDestinations = showDestinations;
-      if (showDestinations) {
+      if (showDestinations && destinationPosts.isEmpty) {
         _fetchDestinationPosts();
-      } else {
+      } else if (!showDestinations && planPosts.isEmpty) {
         _fetchPlanPosts();
       }
     });
@@ -252,8 +252,7 @@ class _PlatformPageState extends State<PlatformPage> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => DestinationDetailPage(
-                                destinationId: post['destinationId'],
-                                //subDestinationId: post['subDestinationId'],
+                                destinationId: post['destinationId'], subdestinationId: post['subDestinationId'],
                               ),
                             ),
                           );
@@ -269,6 +268,7 @@ class _PlatformPageState extends State<PlatformPage> {
                                     backgroundImage: profilePicture != null
                                         ? MemoryImage(profilePicture)
                                         : null,
+                                    backgroundColor: Colors.grey[200],
                                     child: profilePicture == null
                                         ? Icon(Icons.person)
                                         : null,
@@ -295,9 +295,11 @@ class _PlatformPageState extends State<PlatformPage> {
                                     fontSize: 16.0),
                               ),
                               SizedBox(height: 8.0),
-                              destinationImages[post['subDestinationId']] != null
+                              destinationImages[post['subDestinationId']] !=
+                                      null
                                   ? Image.memory(
-                                      destinationImages[post['subDestinationId']]!,
+                                      destinationImages[
+                                          post['subDestinationId']]!,
                                       height: 200.0,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
@@ -364,6 +366,7 @@ class _PlatformPageState extends State<PlatformPage> {
                                     backgroundImage: profilePicture != null
                                         ? MemoryImage(profilePicture)
                                         : null,
+                                        backgroundColor: Colors.grey[300],
                                     child: profilePicture == null
                                         ? Icon(Icons.person)
                                         : null,

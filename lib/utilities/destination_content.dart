@@ -114,7 +114,11 @@ class DestinationContent {
           .get();
 
       devtools.log('Sub-destinations fetched successfully');
-      return subDestinationsSnapshot.docs.map((doc) => doc.data()).toList();
+      return subDestinationsSnapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
     } catch (e) {
       devtools.log('Error fetching sub-destinations: $e');
       return [];

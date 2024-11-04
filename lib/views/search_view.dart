@@ -296,6 +296,7 @@ class _SearchPageState extends State<SearchPage> {
                       MaterialPageRoute(
                         builder: (context) => DestinationDetailPage(
                           destinationId: destinationId,
+                          subdestinationId: null,
                         ),
                       ),
                     );

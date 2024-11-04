@@ -182,8 +182,8 @@ class _TravelViewState extends State<TravelView> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => DestinationDetailPage(
-                                  destinationId:
-                                      destinationId, // Pass the ID or name
+                                  destinationId: destinationId,
+                                  subdestinationId: null, // Pass the ID or name
                                 ),
                               ),
                             );
@@ -319,6 +319,7 @@ class _TravelViewState extends State<TravelView> {
                             MaterialPageRoute(
                               builder: (context) => DestinationDetailPage(
                                 destinationId: destinationId,
+                                subdestinationId: null,
                               ),
                             ),
                           );

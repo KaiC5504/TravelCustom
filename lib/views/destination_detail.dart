@@ -11,10 +11,14 @@ import 'dart:developer' as devtools show log;
 
 class DestinationDetailPage extends StatefulWidget {
   final String destinationId;
+  final String? subdestinationId;
   final bool isFavourited;
 
   const DestinationDetailPage(
-      {super.key, required this.destinationId, this.isFavourited = false});
+      {super.key,
+      required this.destinationId,
+      required this.subdestinationId,
+      this.isFavourited = false});
 
   @override
   State<DestinationDetailPage> createState() => _DestinationDetailPageState();
@@ -186,7 +190,10 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                 ),
                 const SizedBox(height: 20),
 
-                SubDestinationsCard(destinationId: widget.destinationId),
+                SubDestinationsCard(
+                  destinationId: widget.destinationId,
+                  initialSubDestinationId: widget.subdestinationId,
+                ),
                 const SizedBox(height: 13),
 
                 // Horizontal Scrollable Reviews Section
