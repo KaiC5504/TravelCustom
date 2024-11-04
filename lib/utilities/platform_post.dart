@@ -115,6 +115,13 @@ class PlatformPostsContent {
           });
         }
       }
+
+      // Sort the posts by post_date in descending order
+      destinationPosts.sort((a, b) {
+        Timestamp postDateA = a['postDate'] as Timestamp;
+        Timestamp postDateB = b['postDate'] as Timestamp;
+        return postDateB.compareTo(postDateA);
+      });
     } catch (e) {
       devtools.log('Error fetching posts: $e');
     }
