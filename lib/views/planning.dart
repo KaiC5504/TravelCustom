@@ -6,13 +6,26 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:developer' as devtools show log;
 import 'package:intl/intl.dart';
+import 'package:travelcustom/constants/routes.dart';
+import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'package:travelcustom/views/search_view.dart';
 
 class PlanningView extends StatefulWidget {
   final String? planId;
   final String collectionName;
+  final bool newDay;
+  final bool existingDay;
+  final String? subDestinationName;
+  final bool addToSideNote;
+
   const PlanningView(
-      {super.key, this.planId, this.collectionName = 'travel_plans'});
+      {super.key,
+      this.planId,
+      this.collectionName = 'travel_plans',
+      this.newDay = false,
+      this.existingDay = false,
+      this.subDestinationName,
+      this.addToSideNote = false});
 
   @override
   State<PlanningView> createState() => _PlanningViewState();
@@ -26,13 +39,20 @@ class _PlanningViewState extends State<PlanningView> {
   List<Map<String, dynamic>> activities = [];
   Map<String, String> destinationNames = {};
   final ScrollController _scrollController = ScrollController();
+  // final TextEditingController _sideNoteController = TextEditingController();
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      fetchTravelPlanDetails();
-    });
+    fetchTravelPlanDetails();
+
+    if (widget.newDay ||
+        (widget.addToSideNote && widget.subDestinationName != null)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _addDay(); // Open _addDay dialog after build
+      });
+    }
   }
 
   @override
@@ -42,14 +62,16 @@ class _PlanningViewState extends State<PlanningView> {
   }
 
   Future<void> fetchTravelPlanDetails() async {
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
+
     try {
       String planId = widget.planId ?? await _getUserPlanId();
-      devtools.log('Plan ID: $planId');
 
-      if (planId.isEmpty) {
-        devtools.log('No planId found');
-        return;
-      }
+      if (planId.isEmpty) return;
 
       DocumentSnapshot planDoc = await FirebaseFirestore.instance
           .collection(widget.collectionName) // Use platform_plans collection
@@ -64,18 +86,7 @@ class _PlanningViewState extends State<PlanningView> {
               List<Map<String, dynamic>>.from(planData['days'] ?? []);
 
           if (fetchedDays.isEmpty) {
-            devtools.log('No days found');
-          } else {
-            for (int i = 0; i < fetchedDays.length; i++) {
-              var day = fetchedDays[i];
-              String dayTitle = day['day_title'] ?? 'No Title';
-              List<String> sideNotes =
-                  List<String>.from(day['side_note'] ?? []);
-              devtools.log('Day ${i + 1} (Index $i):');
-              devtools.log('Day Title: $dayTitle');
-              devtools.log('Side Notes: ${sideNotes.join(', ')}');
-            }
-          }
+          } else {}
           // Log the details of each day by index
 
           if (mounted) {
@@ -89,14 +100,16 @@ class _PlanningViewState extends State<PlanningView> {
               activities = fetchedDays;
             });
           }
-          devtools.log(
-              'Fetched platform plan details: $planName, $startDate - $endDate, Days: ${fetchedDays.length}');
         }
-      } else {
-        devtools.log('Plan document does not exist.');
-      }
+      } else {}
     } catch (e) {
       devtools.log('Error fetching platform plan details: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -114,6 +127,10 @@ class _PlanningViewState extends State<PlanningView> {
     int newDayNumber = activities.length + 1;
     TextEditingController dayTitleController = TextEditingController();
     List<String> newSideNotes = [];
+
+    if (widget.subDestinationName != null) {
+      newSideNotes.add(widget.subDestinationName!);
+    }
 
     await showDialog(
       context: context,
@@ -194,6 +211,7 @@ class _PlanningViewState extends State<PlanningView> {
                           ),
                         ),
                         SizedBox(height: 20),
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
@@ -203,7 +221,9 @@ class _PlanningViewState extends State<PlanningView> {
                                 final location = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => SearchPage(),
+                                    builder: (context) => SearchPage(
+                                      fromLocationButton: true,
+                                    ),
                                   ),
                                 );
                                 if (location != null) {
@@ -245,7 +265,9 @@ class _PlanningViewState extends State<PlanningView> {
 
                                 await _saveNewDayToFirestore(
                                     newDayNumber, dayTitle, newSideNotes);
-                                Navigator.of(context).pop();
+                                // Navigator.of(context).pop();
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                    naviRoute, (Route<dynamic> route) => false);
                                 await fetchTravelPlanDetails(); // Refresh the plan view
                               },
                               child: Text('Add'),
@@ -344,35 +366,50 @@ class _PlanningViewState extends State<PlanningView> {
         scrolledUnderElevation: 0,
       ),
       backgroundColor: Colors.grey[200],
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: activities.isEmpty
-            ? Center(
-                child: Text(
-                  'No Travel Plan',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-              )
-            : ListView.builder(
-                itemCount: activities.length,
-                itemBuilder: (context, index) {
-                  final dayData = activities[index];
-                  final dayTitle = dayData['day_title'] ?? 'No Title';
-                  final sideNotes =
-                      List<String>.from(dayData['side_note'] ?? []);
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: fetchTravelPlanDetails,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: activities.isEmpty
+                    ? ListView(
+                        // A ListView to enable pull-down refresh when empty
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height *
+                                0.8, // Set height to make it scrollable
+                            child: Center(
+                              child: Text(
+                                'No Travel Plan',
+                                style:
+                                    TextStyle(fontSize: 18, color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        itemCount: activities.length,
+                        itemBuilder: (context, index) {
+                          final dayData = activities[index];
+                          final dayTitle = dayData['day_title'] ?? 'No Title';
+                          final sideNotes =
+                              List<String>.from(dayData['side_note'] ?? []);
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 50.0),
-                    child: _buildPlanDays(
-                      'Day ${index + 1}',
-                      dayTitle,
-                      sideNotes,
-                    ),
-                  );
-                },
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 50.0),
+                            child: _buildPlanDays(
+                              'Day ${index + 1}',
+                              dayTitle,
+                              sideNotes,
+                            ),
+                          );
+                        },
+                      ),
               ),
-      ),
+            ),
       floatingActionButton: widget.collectionName == 'travel_plans'
           ? Padding(
               padding: const EdgeInsets.only(bottom: 20),

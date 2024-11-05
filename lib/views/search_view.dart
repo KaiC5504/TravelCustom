@@ -7,7 +7,8 @@ import 'package:travelcustom/views/destination_detail.dart';
 import 'dart:developer' as devtools show log;
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final bool fromLocationButton;
+  const SearchPage({super.key, this.fromLocationButton = false});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -297,6 +298,7 @@ class _SearchPageState extends State<SearchPage> {
                         builder: (context) => DestinationDetailPage(
                           destinationId: destinationId,
                           subdestinationId: null,
+                          fromLocationButton: widget.fromLocationButton,
                         ),
                       ),
                     );

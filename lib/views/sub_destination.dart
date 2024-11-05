@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'dart:developer' as devtools show log;
 
+import 'package:travelcustom/views/planning.dart';
+
 class SubDestinationsCard extends StatefulWidget {
   final String destinationId;
   final String? initialSubDestinationId;
+  final bool fromLocationButton;
 
   const SubDestinationsCard(
-      {super.key, required this.destinationId, this.initialSubDestinationId});
+      {super.key,
+      required this.destinationId,
+      this.initialSubDestinationId,
+      this.fromLocationButton = false});
 
   @override
   State<SubDestinationsCard> createState() => _SubDestinationsCardState();
@@ -30,14 +36,12 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
         _openInitialSubDestinationDialog();
       });
     }
-    devtools.log('Initial subdes id: ${widget.initialSubDestinationId}');
   }
 
   Future<void> _fetchSubDestinations() async {
     try {
       _subDestinations =
           await DestinationContent().fetchSubDestinations(widget.destinationId);
-          devtools.log('Sub-destinations: $_subDestinations');
       if (mounted) {
         setState(() {
           _isLoadingSubDestinations = false;
@@ -61,16 +65,12 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   Future<void> _openInitialSubDestinationDialog() async {
     final initialSubDes = _subDestinations.firstWhere(
       (subDes) => subDes['id'] == widget.initialSubDestinationId,
-      orElse: () {
-        devtools.log('Sub-destination with ID ${widget.initialSubDestinationId} not found.');
-        return {};
-      },
+      orElse: () => {},
     );
 
     if (initialSubDes.isNotEmpty) {
-      devtools.log('This is initial subdes $initialSubDes');
-      // Reuse the existing dialog method
-      await _showSubDestinationDetails(context, initialSubDes);
+      await _showSubDestinationDetails(
+          context, initialSubDes, widget.fromLocationButton);
     }
   }
 
@@ -79,8 +79,63 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     return await _destinationContent.getAuthorName(authorId) ?? 'Unknown';
   }
 
-  Future<void> _showSubDestinationDetails(
-      BuildContext context, Map<String, dynamic> subDes) async {
+  void _onAddToPlan(BuildContext context, bool fromLocationButton,
+      String subDestinationName) {
+    if (fromLocationButton) {
+      // Directly add to side note in Planning without showing dialog
+      Navigator.pop(context); // Close sub-destination dialog
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PlanningView(
+              subDestinationName: subDestinationName, addToSideNote: true),
+        ),
+      );
+    } else {
+      // Show dialog with New Day or Existing Day options if not from Location Button
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Add to Plan'),
+            content: Text('Add to a new day or an existing day?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PlanningView(
+                          newDay: true, subDestinationName: subDestinationName),
+                    ),
+                  );
+                },
+                child: Text('New Day'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PlanningView(
+                          existingDay: true,
+                          subDestinationName: subDestinationName),
+                    ),
+                  );
+                },
+                child: Text('Existing Day'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _showSubDestinationDetails(BuildContext context,
+      Map<String, dynamic> subDes, bool fromLocationButton) async {
     String authorName = await _getAuthorName(subDes['author'] ?? '');
 
     showDialog(
@@ -165,7 +220,8 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () => _onAddToPlan(context, fromLocationButton,
+                          subDes['name'] ?? 'Unknown Place'),
                       child: const Text('Add to plan'),
                     ),
                   ),
@@ -201,7 +257,8 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                       final subs = _subDestinations[index];
                       devtools.log('Sub-destination: $subs');
                       return GestureDetector(
-                        onTap: () => _showSubDestinationDetails(context, subs),
+                        onTap: () => _showSubDestinationDetails(
+                            context, subs, widget.fromLocationButton),
                         child: Container(
                           width: 230,
                           margin: const EdgeInsets.only(right: 10),

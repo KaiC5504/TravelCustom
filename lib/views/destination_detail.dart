@@ -13,12 +13,14 @@ class DestinationDetailPage extends StatefulWidget {
   final String destinationId;
   final String? subdestinationId;
   final bool isFavourited;
+  final bool fromLocationButton;
 
   const DestinationDetailPage(
       {super.key,
       required this.destinationId,
       required this.subdestinationId,
-      this.isFavourited = false});
+      this.isFavourited = false,
+      this.fromLocationButton = false});
 
   @override
   State<DestinationDetailPage> createState() => _DestinationDetailPageState();
@@ -193,6 +195,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                 SubDestinationsCard(
                   destinationId: widget.destinationId,
                   initialSubDestinationId: widget.subdestinationId,
+                  fromLocationButton: widget.fromLocationButton,
                 ),
                 const SizedBox(height: 13),
 
