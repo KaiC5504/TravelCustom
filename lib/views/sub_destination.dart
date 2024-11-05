@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'dart:developer' as devtools show log;
 
-import 'package:travelcustom/views/planning.dart';
-
 class SubDestinationsCard extends StatefulWidget {
   final String destinationId;
   final String? initialSubDestinationId;
   final bool fromLocationButton;
+  final Function(String)? onAddToPlan;
 
   const SubDestinationsCard(
       {super.key,
       required this.destinationId,
       this.initialSubDestinationId,
-      this.fromLocationButton = false});
+      this.fromLocationButton = false,
+      this.onAddToPlan});
 
   @override
   State<SubDestinationsCard> createState() => _SubDestinationsCardState();
@@ -79,18 +79,10 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     return await _destinationContent.getAuthorName(authorId) ?? 'Unknown';
   }
 
-  void _onAddToPlan(BuildContext context, bool fromLocationButton,
-      String subDestinationName) {
-    if (fromLocationButton) {
+  void _onAddToPlan(String subDestinationName) {
+    if (widget.fromLocationButton) {
       // Directly add to side note in Planning without showing dialog
-      Navigator.pop(context); // Close sub-destination dialog
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PlanningView(
-              subDestinationName: subDestinationName, addToSideNote: true),
-        ),
-      );
+      widget.onAddToPlan?.call(subDestinationName);
     } else {
       // Show dialog with New Day or Existing Day options if not from Location Button
       showDialog(
@@ -102,28 +94,15 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PlanningView(
-                          newDay: true, subDestinationName: subDestinationName),
-                    ),
-                  );
+                  Navigator.pop(context);
+                  widget.onAddToPlan?.call(subDestinationName);
                 },
                 child: Text('New Day'),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PlanningView(
-                          existingDay: true,
-                          subDestinationName: subDestinationName),
-                    ),
-                  );
+                  Navigator.pop(context);
+                  widget.onAddToPlan?.call(subDestinationName);
                 },
                 child: Text('Existing Day'),
               ),
@@ -220,8 +199,8 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => _onAddToPlan(context, fromLocationButton,
-                          subDes['name'] ?? 'Unknown Place'),
+                      onPressed: () =>
+                          _onAddToPlan(subDes['name'] ?? 'Unknown Place'),
                       child: const Text('Add to plan'),
                     ),
                   ),

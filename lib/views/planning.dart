@@ -7,7 +7,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:developer' as devtools show log;
 import 'package:intl/intl.dart';
 import 'package:travelcustom/constants/routes.dart';
-import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'package:travelcustom/views/search_view.dart';
 
 class PlanningView extends StatefulWidget {
@@ -123,13 +122,14 @@ class _PlanningViewState extends State<PlanningView> {
     return userDoc.exists ? userDoc['planId'] ?? '' : '';
   }
 
-  Future<void> _addDay() async {
+  Future<void> _addDay({String? initialSideNote}) async {
     int newDayNumber = activities.length + 1;
     TextEditingController dayTitleController = TextEditingController();
     List<String> newSideNotes = [];
 
-    if (widget.subDestinationName != null) {
-      newSideNotes.add(widget.subDestinationName!);
+    if (initialSideNote != null) {
+      devtools.log('PPP Initial side note: $initialSideNote');
+      newSideNotes.add(initialSideNote);
     }
 
     await showDialog(
@@ -229,6 +229,8 @@ class _PlanningViewState extends State<PlanningView> {
                                 if (location != null) {
                                   setState(() {
                                     newSideNotes.add(location);
+                                    devtools.log(
+                                        'PPP Location to Side: $newSideNotes');
                                   });
                                 }
                               },

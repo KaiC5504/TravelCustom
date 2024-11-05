@@ -99,6 +99,16 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     return _destinationContent.getDestinationDetails(widget.destinationId);
   }
 
+  void _handleAddToPlan(String subDestinationName) {
+    if (widget.fromLocationButton) {
+      // Log the intention to pop and return data to SearchPage
+      devtools.log(
+          'PPP Returning subDestinationName: $subDestinationName to SearchPage');
+      Navigator.pop(context, subDestinationName);
+      Navigator.pop(context, subDestinationName);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,6 +206,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                   destinationId: widget.destinationId,
                   initialSubDestinationId: widget.subdestinationId,
                   fromLocationButton: widget.fromLocationButton,
+                  onAddToPlan: _handleAddToPlan,
                 ),
                 const SizedBox(height: 13),
 

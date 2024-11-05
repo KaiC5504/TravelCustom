@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -292,16 +294,39 @@ class _SearchPageState extends State<SearchPage> {
                 Uint8List? destinationImage = destinationImages[destinationId];
 
                 return GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => DestinationDetailPage(
-                          destinationId: destinationId,
-                          subdestinationId: null,
-                          fromLocationButton: widget.fromLocationButton,
+                  onTap: () async {
+                    if (widget.fromLocationButton) {
+                      // If the Location Button triggered this, navigate to `DestinationDetailPage`
+                      final subDestinationName = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DestinationDetailPage(
+                            destinationId: destination['id'],
+                            subdestinationId: null,
+                            fromLocationButton: widget.fromLocationButton,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+
+                      // Log and pass back the received `subDestinationName` from DestinationDetailPage
+                      devtools.log(
+                          'Received subDestinationName from DestinationDetailPage: $subDestinationName');
+                      if (subDestinationName != null) {
+                        Navigator.pop(context,
+                            subDestinationName); // Pass subDestinationName back to PlanningView
+                      }
+                    } else {
+                      // If not from Location Button, just navigate to DestinationDetailPage as usual
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => DestinationDetailPage(
+                            destinationId: destination['id'],
+                            subdestinationId: null,
+                            fromLocationButton: widget.fromLocationButton,
+                          ),
+                        ),
+                      );
+                    }
                   },
                   child: Card(
                     margin: const EdgeInsets.symmetric(vertical: 8),
