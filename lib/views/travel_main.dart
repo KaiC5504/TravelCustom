@@ -3,7 +3,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:travelcustom/views/destination_detail.dart';
+import 'package:travelcustom/views/detail_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'dart:developer' as devtools show log;
 
@@ -87,27 +87,17 @@ class _TravelViewState extends State<TravelView> {
     return FirebaseFirestore.instance.collection('destinations').snapshots();
   }
 
-  Future<void> refreshTravelData() async {
-    _getDestinations();
-    setState(() {
-      _recommendedDestinationsFuture = fetchAndDisplayRecommendations();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.grey[200],
-        scrolledUnderElevation: 0,
-        toolbarHeight: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 0, // Remove default AppBar
       ),
-      backgroundColor: Colors.grey[200],
-      body: RefreshIndicator(
-        onRefresh: refreshTravelData,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -136,30 +126,17 @@ class _TravelViewState extends State<TravelView> {
                 stream: _getDestinations(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 120, // Fixed height to avoid pushing UI elements
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (snapshot.hasError) {
-                    return SizedBox(
-                      height: 120, // Fixed height to maintain layout stability
-                      child: const Center(
-                        child: Text('Error loading destinations'),
-                      ),
-                    );
+                    return const Center(
+                        child: Text('Error loading destinations'));
                   }
 
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return SizedBox(
-                      height: 120, // Fixed height to keep layout stable
-                      child: const Center(
-                        child: Text('No destinations available'),
-                      ),
-                    );
+                    return const Center(
+                        child: Text('No destinations available'));
                   }
 
                   final destinations = snapshot.data!.docs;
@@ -181,7 +158,7 @@ class _TravelViewState extends State<TravelView> {
                             // Navigate to the detailed page when tapped
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => DestinationDetailPage(
+                                builder: (context) => DetailsPage(
                                   destinationId:
                                       destinationId, // Pass the ID or name
                                 ),
@@ -317,7 +294,7 @@ class _TravelViewState extends State<TravelView> {
 
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => DestinationDetailPage(
+                              builder: (context) => DetailsPage(
                                 destinationId: destinationId,
                               ),
                             ),

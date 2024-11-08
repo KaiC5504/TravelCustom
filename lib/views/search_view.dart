@@ -1,10 +1,7 @@
-import 'dart:typed_data';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import 'package:travelcustom/views/destination_detail.dart';
-import 'dart:developer' as devtools show log;
+import 'package:travelcustom/views/detail_view.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -20,48 +17,29 @@ class _SearchPageState extends State<SearchPage> {
 
   // Local list to store the fetched destinations
   List<Map<String, dynamic>> localDestination = [];
-  Map<String, Uint8List?> destinationImages = {};
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   @override
   void initState() {
     super.initState();
-    _fetchDestinations();
+    _fetchDestinations(); // Fetch destinations on page load
   }
 
   // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('destinations').get();
-    List<Map<String, dynamic>> fetchedDestinations = snapshot.docs.map((doc) {
-      return {
-        'id': doc.id, // You can use this ID as a unique identifier
-        'name': doc['destination'],
-        'rating': doc['average_rating'],
-        'popularity': doc['number_of_reviews'],
-      };
-    }).toList();
-
-    // Fetch images from Firebase Storage
-    for (var destination in fetchedDestinations) {
-      String destinationId = destination['id'];
-      try {
-        final ref =
-            _storage.ref().child('destination_images/$destinationId.webp');
-        Uint8List? destinationImageBytes = await ref.getData(100000000);
-        destinationImages[destinationId] = destinationImageBytes;
-      } catch (e) {
-        if (e is FirebaseException && e.code == 'object-not-found') {
-          devtools.log(
-              'No destination image found for $destinationId, using default image.');
-        } else {
-          devtools.log('Error fetching image for $destinationId: $e');
-        }
-      }
-    }
-
     setState(() {
-      localDestination = fetchedDestinations;
+      localDestination = snapshot.docs.map((doc) {
+        return {
+          'id': doc.id, // You can use this ID as a unique identifier
+          'name': doc['destination'],
+          'rating': doc['average_rating'],
+          'imageUrl': (doc['images'] as List<dynamic>).isNotEmpty
+              ? doc['images'][0]
+              : '',
+          'popularity': doc['number_of_reviews'],
+        };
+      }).toList();
     });
   }
 
@@ -114,7 +92,6 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
@@ -262,17 +239,14 @@ class _SearchPageState extends State<SearchPage> {
                       itemCount: _filteredDestinations().length,
                       itemBuilder: (context, index) {
                         var destination = _filteredDestinations()[index];
-                        String destinationId = destination['id'];
-                        Uint8List? destinationImage =
-                            destinationImages[destinationId];
-
                         return GestureDetector(
                           onTap: () {
                             // Navigate to the detailed page when tapped
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => DestinationDetailPage(
-                                  destinationId: destinationId,
+                                builder: (context) => DetailsPage(
+                                  destinationId:
+                                      destination['id'], // Pass the ID or name
                                 ),
                               ),
                             );
@@ -283,10 +257,10 @@ class _SearchPageState extends State<SearchPage> {
                               height: 200,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(15),
-                                color: Colors.grey[200],
-                                image: destinationImage != null
+                                image: destination['imageUrl'] != null
                                     ? DecorationImage(
-                                        image: MemoryImage(destinationImage),
+                                        image: NetworkImage(
+                                            destination['imageUrl']),
                                         fit: BoxFit.cover,
                                         colorFilter: ColorFilter.mode(
                                           Colors.black.withOpacity(0.4),
