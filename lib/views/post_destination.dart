@@ -221,7 +221,8 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         'description': _descriptionController.text,
         'name': _nameController.text,
         'image': '',
-        'estimate_cost': _costController.text,
+        'estimate_cost':
+            double.tryParse(_costController.text)?.toStringAsFixed(2) ?? '0.00',
         'location': selectedState,
         'post_date': Timestamp.now(),
         'tags': _selectedTags,
@@ -381,8 +382,9 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
             SizedBox(height: 6.0),
             TextField(
               controller: _costController,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: '',
+                prefixText: 'RM ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),

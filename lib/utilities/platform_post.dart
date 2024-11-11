@@ -108,6 +108,7 @@ class PlatformPostsContent {
             'destinationId': destinationDoc.id,
             'subDestinationId': subDestinationDoc.id,
             'authorName': userData['name'],
+            'authorRole': userData['role'], // Add this line
             'authorId': userId,
             'destination': subDestinationData['name'],
             'description': subDestinationData['description'],
@@ -197,6 +198,7 @@ class PlatformPostsContent {
           'planName': planData['plan_name'],
           'userId': userId,
           'authorName': userData['name'],
+          'authorRole': userData['role'],
           'days': daysData,
           'postDate': planData['post_date'],
         });

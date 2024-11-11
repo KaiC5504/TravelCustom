@@ -25,6 +25,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   List<Map<String, dynamic>> _subDestinations = [];
   bool _isLoadingSubDestinations = true;
   final DestinationContent _destinationContent = DestinationContent();
+  bool _dialogOpened = false; // Add this flag
 
   @override
   void initState() {
@@ -48,7 +49,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
         });
       }
       // Open the dialog only after sub-destinations are fetched
-      if (widget.initialSubDestinationId != null) {
+      if (widget.initialSubDestinationId != null && !_dialogOpened) {
         devtools.log('Opening initial subdes dialog');
         _openInitialSubDestinationDialog();
       }
@@ -63,6 +64,8 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   }
 
   Future<void> _openInitialSubDestinationDialog() async {
+    if (_dialogOpened) return; // Check if the dialog has already been opened
+
     final initialSubDes = _subDestinations.firstWhere(
       (subDes) => subDes['id'] == widget.initialSubDestinationId,
       orElse: () => {},
@@ -71,6 +74,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     if (initialSubDes.isNotEmpty) {
       await _showSubDestinationDetails(
           context, initialSubDes, widget.fromLocationButton);
+      _dialogOpened = true; // Set the flag to true after the dialog is shown
     }
   }
 
@@ -169,7 +173,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    subDes['estimate_cost']?.toString() ?? 'N/A',
+                    'RM ${subDes['estimate_cost']?.toString() ?? 'N/A'}',
                     softWrap: true,
                     style: const TextStyle(fontSize: 16),
                   ),
@@ -221,7 +225,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Popular Locations:",
+            "Recent Locations:",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),

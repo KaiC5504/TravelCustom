@@ -24,6 +24,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String? name;
+  String? role;
   Uint8List? avatarBytes;
   bool isLoading = true;
 
@@ -58,6 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() {
           name = userDoc['name'];
+          role = userDoc['role']; // Fetch role from Firestore
         });
       }
 
@@ -96,6 +98,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> refreshProfileData() async {
     await fetchUserData(); // Save name to local storage
+  }
+
+  Future<void> updateUserRole(String role) async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final uid = user.uid;
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'role': role,
+      });
+      await fetchUserData(); // Refresh data after updating role
+    }
   }
 
   @override
@@ -206,12 +219,24 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 // Display local name instantly if available
                 Center(
-                  child: Text(
-                    name ?? '',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        name ?? '',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (role != null)
+                        Text(
+                          role!,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Color.fromARGB(255, 117, 117, 117),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
 
@@ -247,9 +272,47 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 // Menu Options
                 ListTile(
-                  leading: const FaIcon(FontAwesomeIcons.sliders),
-                  title: const Text('Preferences'),
-                  onTap: () {}, // Placeholder for future function
+                  leading: const FaIcon(FontAwesomeIcons.userTag),
+                  title: const Text('Role'),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text('Select Your Role'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.person),
+                                title: const Text('Traveller'),
+                                onTap: () async {
+                                  await updateUserRole('Traveller');
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.business),
+                                title: const Text('Travel Agency'),
+                                onTap: () async {
+                                  await updateUserRole('Travel Agency');
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const FaIcon(FontAwesomeIcons.map),

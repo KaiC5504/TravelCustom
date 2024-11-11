@@ -279,6 +279,11 @@ class _PlatformPageState extends State<PlatformPage> {
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold),
                                   ),
+                                  SizedBox(width: 5.0),
+                                  Text(
+                                    '(${post['authorRole']})',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                                  ),
                                   Spacer(),
                                   Text(
                                     timeAgo,
@@ -376,6 +381,11 @@ class _PlatformPageState extends State<PlatformPage> {
                                     post['authorName'],
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(width: 5.0),
+                                  Text(
+                                    '(${post['authorRole']})',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
                                   ),
                                   Spacer(),
                                   Text(

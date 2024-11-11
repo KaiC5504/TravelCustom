@@ -206,4 +206,33 @@ class DestinationContent {
       devtools.log('No travel plan found for user');
     }
   }
+
+  Future<void> addReview(
+      String destinationId, double rating, String reviewContent) async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      devtools.log('User is not logged in');
+      return;
+    }
+
+    // Trim spaces at the end and remove excess rows
+    reviewContent = reviewContent.trimRight();
+    reviewContent = reviewContent.replaceAll(RegExp(r'\n\s*\n'), '\n');
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(destinationId)
+          .collection('reviews')
+          .add({
+        'userId': userId,
+        'rating': rating,
+        'review_content': reviewContent,
+        'review_date': Timestamp.now(),
+      });
+      devtools.log('Review added successfully');
+    } catch (e) {
+      devtools.log('Error adding review: $e');
+    }
+  }
 }

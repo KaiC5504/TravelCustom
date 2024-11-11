@@ -58,6 +58,7 @@ class _RegisterViewState extends State<RegisterView> {
           'name': '',
           'planId': planId,
           'favourites': [],
+          'role': 'traveller',
         });
 
         Navigator.of(context).pushNamedAndRemoveUntil(
