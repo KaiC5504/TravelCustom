@@ -391,6 +391,17 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                 filled: true,
                 fillColor: Colors.white,
               ),
+              onChanged: (value) {
+                double? cost = double.tryParse(value);
+                if (cost != null) {
+                  _costController.value = TextEditingValue(
+                    text: cost.toStringAsFixed(2),
+                    selection: TextSelection.fromPosition(
+                      TextPosition(offset: _costController.text.length),
+                    ),
+                  );
+                }
+              },
             ),
             SizedBox(height: 15.0),
             Text(

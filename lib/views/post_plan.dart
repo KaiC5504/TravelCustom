@@ -236,14 +236,26 @@ class _PostPlanPageState extends State<PostPlanPage> {
             SizedBox(height: 8.0),
             TextField(
               controller: _costController,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: '',
+                prefixText: 'RM ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 filled: true,
                 fillColor: Colors.white,
               ),
+              onChanged: (value) {
+                double? cost = double.tryParse(value);
+                if (cost != null) {
+                  _costController.value = TextEditingValue(
+                    text: cost.toStringAsFixed(2),
+                    selection: TextSelection.fromPosition(
+                      TextPosition(offset: _costController.text.length),
+                    ),
+                  );
+                }
+              },
             ),
             SizedBox(height: 25.0),
             Text(
