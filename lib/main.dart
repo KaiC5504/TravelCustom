@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'package:travelcustom/firebase_options.dart';
 import 'package:travelcustom/utilities/navigation_bar.dart';
@@ -17,7 +16,6 @@ import 'package:travelcustom/views/travel_plan_view.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await dotenv.load(fileName: "api_key.env");
   runApp(const MyApp());
 }
 
