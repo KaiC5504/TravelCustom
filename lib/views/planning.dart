@@ -1,5 +1,4 @@
 // ignore_for_file: use_build_context_synchronously
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -358,7 +357,7 @@ class _PlanningViewState extends State<PlanningView> {
 
   Future<void> autoPlan(String userInput) async {
     final apiKey =
-        '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';
+        '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';
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');
 
     try {
@@ -504,7 +503,7 @@ class _PlanningViewState extends State<PlanningView> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   FloatingActionButton(
-                    heroTag: 'add_day_button', 
+                    heroTag: 'add_day_button',
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
                     ),
@@ -514,7 +513,7 @@ class _PlanningViewState extends State<PlanningView> {
                   ),
                   SizedBox(height: 10),
                   FloatingActionButton(
-                    heroTag: 'auto_plan_button', 
+                    heroTag: 'auto_plan_button',
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
                     ),
