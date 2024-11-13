@@ -25,7 +25,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   List<Map<String, dynamic>> _subDestinations = [];
   bool _isLoadingSubDestinations = true;
   final DestinationContent _destinationContent = DestinationContent();
-  bool _dialogOpened = false; // Add this flag
+  bool _dialogOpened = false;
 
   @override
   void initState() {

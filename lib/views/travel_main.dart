@@ -112,10 +112,9 @@ class _TravelViewState extends State<TravelView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              // Header: Travel Recommendation
               Center(
                 child: Text(
-                  'Travel Recommendation',
+                  'TravelCustom',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -125,7 +124,7 @@ class _TravelViewState extends State<TravelView> {
               const SizedBox(height: 30),
 
               Text(
-                'Malaysia',
+                'States',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
               ),
 

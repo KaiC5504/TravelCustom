@@ -8,6 +8,8 @@ import 'dart:developer' as devtools show log;
 import 'package:intl/intl.dart';
 import 'package:travelcustom/constants/routes.dart';
 import 'package:travelcustom/views/search_view.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class PlanningView extends StatefulWidget {
   final String? planId;
@@ -38,7 +40,6 @@ class _PlanningViewState extends State<PlanningView> {
   List<Map<String, dynamic>> activities = [];
   Map<String, String> destinationNames = {};
   final ScrollController _scrollController = ScrollController();
-  // final TextEditingController _sideNoteController = TextEditingController();
   bool isLoading = true;
 
   @override
@@ -355,6 +356,90 @@ class _PlanningViewState extends State<PlanningView> {
     });
   }
 
+  Future<void> autoPlan(String userInput) async {
+    final apiKey =
+        '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';
+    final url = Uri.parse('https://api.openai.com/v1/chat/completions');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: json.encode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': 'You are a helpful assistant.'},
+            {
+              'role': 'user',
+              'content':
+                  'Generate a travel plan based on the following input: $userInput. Please provide ONLY the title and 3 words side notes for each day. Avoid using labels such as Day 1 or Day 2. Add more side notes for each day, such as restaurant recommendations.'
+            }
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final planText = data['choices'][0]['message']['content'];
+
+        devtools.log('API Response: $planText');
+
+        // Parse the planText into a structured format
+        List<Map<String, dynamic>> generatedPlan = _parsePlanText(planText);
+
+        if (mounted) {
+          setState(() {
+            activities = generatedPlan;
+          });
+        }
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error']['message'];
+        devtools.log('Failed to generate plan: $errorMessage');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate plan: $errorMessage')),
+        );
+      }
+    } catch (e) {
+      devtools.log('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred. Please try again.')),
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _parsePlanText(String planText) {
+    // Implement a method to parse the AI-generated text into a structured format
+    // This is a simple example and may need to be adjusted based on the actual format of the planText
+    List<Map<String, dynamic>> parsedPlan = [];
+    List<String> days =
+        planText.split('\n\n'); // Split by double newline to separate days
+
+    for (String day in days) {
+      List<String> lines =
+          day.split('\n'); // Split by newline to separate title and activities
+      if (lines.isNotEmpty) {
+        String dayTitle = lines[0]
+            .replaceAll('**', '')
+            .trim(); // Remove '**' and trim whitespace
+        List<String> sideNotes = lines
+            .sublist(1)
+            .map((note) =>
+                note.replaceFirst('-', '').trim().split(' ').join(' '))
+            .toList(); // Remove hyphen, trim, and limit side notes to 3 words
+        parsedPlan.add({
+          'day_title': dayTitle,
+          'side_note': sideNotes,
+        });
+      }
+    }
+
+    return parsedPlan;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -415,16 +500,69 @@ class _PlanningViewState extends State<PlanningView> {
       floatingActionButton: widget.collectionName == 'travel_plans'
           ? Padding(
               padding: const EdgeInsets.only(bottom: 20),
-              child: FloatingActionButton(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                onPressed: _addDay,
-                backgroundColor: const Color.fromARGB(255, 135, 139, 227),
-                child: FaIcon(FontAwesomeIcons.plus, color: Colors.white),
-              ))
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'add_day_button', 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    onPressed: _addDay,
+                    backgroundColor: const Color.fromARGB(255, 135, 139, 227),
+                    child: FaIcon(FontAwesomeIcons.plus, color: Colors.white),
+                  ),
+                  SizedBox(height: 10),
+                  FloatingActionButton(
+                    heroTag: 'auto_plan_button', 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    onPressed: () async {
+                      String userInput = await _getUserInputForAutoPlan();
+                      await autoPlan(userInput);
+                    },
+                    backgroundColor: const Color.fromARGB(255, 135, 139, 227),
+                    child: FaIcon(FontAwesomeIcons.robot, color: Colors.white),
+                  ),
+                ],
+              ),
+            )
           : null,
     );
+  }
+
+  Future<String> _getUserInputForAutoPlan() async {
+    TextEditingController userInputController = TextEditingController();
+    String userInput = '';
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Enter your travel preferences'),
+          content: TextField(
+            controller: userInputController,
+            decoration: InputDecoration(labelText: 'Describe your travel plan'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                userInput = userInputController.text;
+                Navigator.of(context).pop();
+              },
+              child: Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return userInput;
   }
 }
 

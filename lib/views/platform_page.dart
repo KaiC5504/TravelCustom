@@ -204,18 +204,21 @@ class _PlatformPageState extends State<PlatformPage> {
                 splashColor: Color.fromARGB(255, 91, 91, 91).withOpacity(0.2),
                 highlightColor: Color.fromARGB(255, 91, 91, 91)
                     .withOpacity(0.2), // Highlight color when pressed
-                child: Container(
-                  width: 140,
-                  height: 39, // Half the height for a semi-circle
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(45),
+                child: Hero(
+                  tag: 'platform_add_button', 
+                  child: Container(
+                    width: 140,
+                    height: 39, // Half the height for a semi-circle
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(45),
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    FontAwesomeIcons.plus,
-                    color: Colors.white,
+                    child: Icon(
+                      FontAwesomeIcons.plus,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

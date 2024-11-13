@@ -316,7 +316,7 @@ class _SearchPageState extends State<SearchPage> {
                             subDestinationName); // Pass subDestinationName back to PlanningView
                       }
                     } else {
-                      // If not from Location Button, just navigate to DestinationDetailPage as usual
+                      
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => DestinationDetailPage(
