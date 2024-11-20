@@ -12,7 +12,7 @@ import 'package:travelcustom/views/register_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
 import 'package:travelcustom/views/travel_plan_view.dart';
-import 'package:travelcustom/views/try_main.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
             seedColor: const Color.fromARGB(255, 136, 101, 197)),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const CustomBottomNavigationBar(),
       routes: {
         registerRoute: (context) => const RegisterView(),
         loginRoute: (context) => const LoginView(),
