@@ -374,7 +374,7 @@ class _PlanningViewState extends State<PlanningView> {
             {
               'role': 'user',
               'content':
-                  'Generate a travel plan based on the following input: $userInput. Please provide ONLY the title and 3 words side notes for each day. Avoid using labels such as Day 1 or Day 2. Add more side notes for each day, such as restaurant recommendations.'
+                  "Generate a travel plan based on the following input: $userInput. Please use the following format for each day:\n\nDay Title\nSide Note (3 words)\nSide Note (3 words)\nSide Note (3 words)\n\nOnly provide the title and three-word side notes as requested, with no additional labels like 'Day 1' or 'Day 2'. Also, add relevant side notes, such as restaurant recommendations, activities, or nearby attractions."
             }
           ],
         }),
@@ -394,6 +394,9 @@ class _PlanningViewState extends State<PlanningView> {
             activities = generatedPlan;
           });
         }
+
+        // Save the generated plan to Firestore
+        await _saveGeneratedPlanToFirestore(generatedPlan);
       } else {
         final errorData = json.decode(response.body);
         final errorMessage = errorData['error']['message'];
@@ -410,25 +413,33 @@ class _PlanningViewState extends State<PlanningView> {
     }
   }
 
+  Future<void> _saveGeneratedPlanToFirestore(List<Map<String, dynamic>> generatedPlan) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final planId = await _getUserPlanId();
+    if (planId.isEmpty) return;
+
+    final planDocRef = FirebaseFirestore.instance.collection('travel_plans').doc(planId);
+
+    await planDocRef.update({
+      'days': generatedPlan,
+    });
+  }
+
   List<Map<String, dynamic>> _parsePlanText(String planText) {
-    // Implement a method to parse the AI-generated text into a structured format
-    // This is a simple example and may need to be adjusted based on the actual format of the planText
     List<Map<String, dynamic>> parsedPlan = [];
-    List<String> days =
-        planText.split('\n\n'); // Split by double newline to separate days
+    List<String> days = planText.split('\n\n');
 
     for (String day in days) {
-      List<String> lines =
-          day.split('\n'); // Split by newline to separate title and activities
+      List<String> lines = day.split('\n');
       if (lines.isNotEmpty) {
-        String dayTitle = lines[0]
-            .replaceAll('**', '')
-            .trim(); // Remove '**' and trim whitespace
+        String dayTitle = lines[0].replaceAll('**', '').trim();
         List<String> sideNotes = lines
             .sublist(1)
             .map((note) =>
                 note.replaceFirst('-', '').trim().split(' ').join(' '))
-            .toList(); // Remove hyphen, trim, and limit side notes to 3 words
+            .toList();
         parsedPlan.add({
           'day_title': dayTitle,
           'side_note': sideNotes,
@@ -519,7 +530,9 @@ class _PlanningViewState extends State<PlanningView> {
                     ),
                     onPressed: () async {
                       String userInput = await _getUserInputForAutoPlan();
-                      await autoPlan(userInput);
+                      if (userInput.isNotEmpty) {
+                        await autoPlan(userInput);
+                      }
                     },
                     backgroundColor: const Color.fromARGB(255, 135, 139, 227),
                     child: FaIcon(FontAwesomeIcons.robot, color: Colors.white),
