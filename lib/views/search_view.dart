@@ -44,14 +44,14 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       _isLoading = true;
     });
-    QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('destinations').get();
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collectionGroup('sub_destinations')
+        .get();
     List<Map<String, dynamic>> fetchedDestinations = snapshot.docs.map((doc) {
       return {
-        'id': doc.id, // You can use this ID as a unique identifier
-        'name': doc['destination'],
-        'rating': doc['average_rating'] ?? 0,
-        'popularity': doc['number_of_reviews'] ?? 0,
+        'id': doc.id, // subdestinationId
+        'name': doc['name'],
+        'destinationId': doc.reference.parent.parent?.id, // main collection id
       };
     }).toList();
 
@@ -112,12 +112,13 @@ class _SearchPageState extends State<SearchPage> {
 
     // Apply sorting based on the selectedSort value
     if (selectedSort == 'Name') {
-      filteredList.sort((a, b) => a['name'].compareTo(b['name']));
+      filteredList.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
     } else if (selectedSort == 'Rating') {
-      filteredList.sort((a, b) => b['rating'].compareTo(a['rating']));
+      filteredList
+          .sort((a, b) => (b['rating'] ?? 0).compareTo(a['rating'] ?? 0));
     } else if (selectedSort == 'Popularity') {
-      // Assuming you have a 'popularity' field
-      filteredList.sort((a, b) => b['popularity'].compareTo(a['popularity']));
+      filteredList.sort(
+          (a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
     }
 
     return filteredList;
@@ -301,8 +302,8 @@ class _SearchPageState extends State<SearchPage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => DestinationDetailPage(
-                            destinationId: destination['id'],
-                            subdestinationId: null,
+                            destinationId: destination['destinationId'],
+                            subdestinationId: destination['id'],
                             fromLocationButton: widget.fromLocationButton,
                           ),
                         ),
@@ -316,13 +317,11 @@ class _SearchPageState extends State<SearchPage> {
                             subDestinationName); // Pass subDestinationName back to PlanningView
                       }
                     } else {
-                      
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => DestinationDetailPage(
-                            destinationId: destination['id'],
-                            subdestinationId: null,
-                            fromLocationButton: widget.fromLocationButton,
+                            destinationId: destination['destinationId'],
+                            subdestinationId: destination['id'], 
                           ),
                         ),
                       );
