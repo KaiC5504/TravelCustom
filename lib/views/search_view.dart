@@ -63,45 +63,94 @@ class _SearchPageState extends State<SearchPage> {
 
   // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
+    devtools.log('Starting to fetch destinations');
     setState(() {
       _isLoading = true;
     });
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collectionGroup('sub_destinations')
-        .get();
-    List<Map<String, dynamic>> fetchedDestinations = snapshot.docs.map((doc) {
-      return {
-        'id': doc.id, // subdestinationId
-        'name': doc['name'],
-        'destinationId': doc.reference.parent.parent?.id, // main collection id
-        'tags': List<String>.from(doc['tags'] ?? []), // Fetch tags
-        'estimate_cost': doc['estimate_cost'] ?? 0, // Add this line
-      };
-    }).toList();
 
-    // Fetch images from Firebase Storage
-    for (var destination in fetchedDestinations) {
-      String destinationId = destination['id'];
-      try {
-        final ref =
-            _storage.ref().child('destination_images/$destinationId.webp');
-        Uint8List? destinationImageBytes = await ref.getData(100000000);
-        destinationImages[destinationId] = destinationImageBytes;
-      } catch (e) {
-        if (e is FirebaseException && e.code == 'object-not-found') {
-          devtools.log(
-              'No destination image found for $destinationId, using default image.');
-        } else {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collectionGroup('sub_destinations')
+          .get();
+
+      devtools.log('Retrieved ${snapshot.docs.length} documents');
+      
+      // Use a Map to track unique documents by ID
+      Map<String, Map<String, dynamic>> uniqueDestinations = {};
+
+      for (var doc in snapshot.docs) {
+        String docId = doc.id;
+        if (!uniqueDestinations.containsKey(docId)) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          
+          // Handle numeric fields carefully
+          num estimateCost = 0;
+          if (data['estimate_cost'] != null) {
+            if (data['estimate_cost'] is String) {
+              estimateCost = num.tryParse(data['estimate_cost']) ?? 0;
+            } else if (data['estimate_cost'] is num) {
+              estimateCost = data['estimate_cost'];
+            }
+          }
+
+          num rating = 0.0;
+          if (data['rating'] != null) {
+            if (data['rating'] is String) {
+              rating = num.tryParse(data['rating']) ?? 0.0;
+            } else if (data['rating'] is num) {
+              rating = data['rating'];
+            }
+          }
+
+          num clickCount = 0;
+          if (data['click_count'] != null) {
+            if (data['click_count'] is String) {
+              clickCount = num.tryParse(data['click_count']) ?? 0;
+            } else if (data['click_count'] is num) {
+              clickCount = data['click_count'];
+            }
+          }
+
+          uniqueDestinations[docId] = {
+            'id': docId,
+            'name': data['name'] ?? '',
+            'destinationId': doc.reference.parent.parent?.id,
+            'tags': List<String>.from(data['tags'] ?? []),
+            'estimate_cost': estimateCost,
+            'click_count': clickCount,
+            'rating': rating,
+          };
+        }
+      }
+
+      List<Map<String, dynamic>> fetchedDestinations = uniqueDestinations.values.toList();
+
+      // Keep existing image fetching logic
+      for (var destination in fetchedDestinations) {
+        String destinationId = destination['id'];
+        try {
+          final ref = _storage.ref().child('destination_images/$destinationId.webp');
+          Uint8List? destinationImageBytes = await ref.getData(100000000);
+          destinationImages[destinationId] = destinationImageBytes;
+        } catch (e) {
           devtools.log('Error fetching image for $destinationId: $e');
         }
       }
-    }
 
-    if (mounted) {
-      setState(() {
-        localDestination = fetchedDestinations;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          localDestination = fetchedDestinations;
+          _isLoading = false;
+          devtools.log('Successfully loaded ${localDestination.length} destinations');
+        });
+      }
+    } catch (e) {
+      devtools.log('Error in _fetchDestinations: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
