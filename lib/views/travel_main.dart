@@ -97,12 +97,7 @@ class _TravelViewState extends State<TravelView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.grey[200],
-        scrolledUnderElevation: 0,
-        toolbarHeight: 0,
-      ),
-      backgroundColor: Colors.grey[200],
+      backgroundColor: Colors.white,
       body: RefreshIndicator(
         onRefresh: refreshTravelData,
         child: SingleChildScrollView(
@@ -111,183 +106,115 @@ class _TravelViewState extends State<TravelView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
-              Center(
-                child: Text(
-                  'TravelCustom',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.menu, color: Colors.black),
+                    onPressed: () {
+                      // Handle menu button press
+                    },
                   ),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              Text(
-                'States',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Fetch and display images from Firestore in horizontal scroll
-              StreamBuilder<QuerySnapshot>(
-                stream: _getDestinations(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 120, // Fixed height to avoid pushing UI elements
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return SizedBox(
-                      height: 120, // Fixed height to maintain layout stability
-                      child: const Center(
-                        child: Text('Error loading destinations'),
-                      ),
-                    );
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return SizedBox(
-                      height: 120, // Fixed height to keep layout stable
-                      child: const Center(
-                        child: Text('No destinations available'),
-                      ),
-                    );
-                  }
-
-                  final destinations = snapshot.data!.docs;
-
-                  return SizedBox(
-                    height: 120, // Height for the horizontal list
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: destinations.length,
-                      itemBuilder: (context, index) {
-                        var destinationData =
-                            destinations[index].data() as Map<String, dynamic>;
-
-                        return GestureDetector(
-                          onTap: () {
-                            // Get the document ID for the selected destination
-                            String destinationId =
-                                snapshot.data!.docs[index].id;
-                            // Navigate to the detailed page when tapped
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => DestinationDetailPage(
-                                  destinationId: destinationId,
-                                  subdestinationId: null, // Pass the ID or name
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: 100,
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.rectangle,
-                              borderRadius: BorderRadius.circular(15),
-                              image: destinationData['images'] != null &&
-                                      destinationData['images'].isNotEmpty
-                                  ? DecorationImage(
-                                      image: NetworkImage(
-                                          destinationData['images'][0]),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: Stack(
-                              // Use Stack to overlay the text at the bottom center
-                              children: [
-                                Align(
-                                  alignment: Alignment
-                                      .bottomCenter, // Align text at the bottom center
-                                  child: Container(
-                                    width: 150,
-                                    padding: const EdgeInsets.all(7.0),
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(34, 0, 0, 0),
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(15),
-                                        bottomRight: Radius.circular(15),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      destinationData['destination'] ??
-                                          'No Destination',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 30),
-
-              //Search Bar
-              GestureDetector(
-                onTap: () {
-                  // Navigate to Search Page when search bar is tapped
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const SearchPage()),
-                  );
-                },
-                child: Container(
-                  height: 50,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.search, color: Colors.grey),
-                      SizedBox(width: 10),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, color: Colors.red),
+                      const SizedBox(width: 5),
                       Text(
-                        'Search for Location',
-                        style: TextStyle(color: Colors.grey),
+                        'Babarsari, YK',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
                     ],
                   ),
+                  IconButton(
+                    icon: Icon(Icons.search, color: Colors.black),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const SearchPage()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [Colors.blueAccent, Colors.lightBlueAccent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Let's Discover Around",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Find the best place to visit",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Handle button press
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.blueAccent, backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text("Start now"),
+                    ),
+                  ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Recommendation Location
               Text(
-                'Recommended Location',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                'Categories',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-
               const SizedBox(height: 10),
-
-              //Fetch Recommended Locations
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildCategoryChip(Icons.filter, "All"),
+                    _buildCategoryChip(Icons.landscape, "Hill"),
+                    _buildCategoryChip(Icons.beach_access, "Beach"),
+                    _buildCategoryChip(Icons.hotel, "Hotel"),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Recommended Locations',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
               FutureBuilder<List<Map<String, dynamic>>>(
                 future: _recommendedDestinationsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   if (snapshot.hasError) {
                     devtools.log(
                         "Error loading recommendations: ${snapshot.error}");
@@ -297,76 +224,118 @@ class _TravelViewState extends State<TravelView> {
                       ),
                     );
                   }
-
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(
                         child: Text('No recommended destinations available'));
                   }
-
                   final recommendedDestinations = snapshot.data!;
-
-                  return Column(
-                    children: recommendedDestinations.map((destinationData) {
-                      return GestureDetector(
-                        onTap: () {
-                          devtools.log(destinationData
-                              .toString()); // Log the entire destinationData to check the structure
-                          //Navigate to detail page
-                          String destinationId = destinationData['id'];
-
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => DestinationDetailPage(
-                                destinationId: destinationId,
-                                subdestinationId: null,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          height: 150,
-                          margin: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(10),
-                            image: destinationData['images'] != null &&
-                                    destinationData['images'].isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(
-                                        destinationData['images'][0]),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: Stack(
-                            children: [
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8.0),
-                                  color: Colors.black.withOpacity(0.6),
-                                  child: Text(
-                                    destinationData['destination'] ??
-                                        'No Destination',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.9, // Adjusted aspect ratio for shorter height
+                    ),
+                    itemCount: recommendedDestinations.length,
+                    itemBuilder: (context, index) {
+                      var destinationData = recommendedDestinations[index];
+                      return _buildRecommendationCard(destinationData);
+                    },
                   );
                 },
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(IconData icon, String label) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blueAccent,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard(Map<String, dynamic> destinationData) {
+    return GestureDetector(
+      onTap: () {
+        devtools.log(destinationData.toString());
+        String destinationId = destinationData['id'];
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DestinationDetailPage(
+              destinationId: destinationId,
+              subdestinationId: null,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+          image: destinationData['images'] != null &&
+                  destinationData['images'].isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(destinationData['images'][0]),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                padding: const EdgeInsets.all(10.0),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  destinationData['destination'] ?? 'No Destination',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Icon(Icons.bookmark, color: Colors.white),
+            ),
+          ],
         ),
       ),
     );
