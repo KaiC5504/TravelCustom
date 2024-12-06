@@ -100,17 +100,6 @@ class _ProfilePageState extends State<ProfilePage> {
     await fetchUserData(); // Save name to local storage
   }
 
-  Future<void> updateUserRole(String role) async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final uid = user.uid;
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'role': role,
-      });
-      await fetchUserData(); // Refresh data after updating role
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -271,49 +260,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 30),
 
                 // Menu Options
-                ListTile(
-                  leading: const FaIcon(FontAwesomeIcons.userTag),
-                  title: const Text('Role'),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('Select Your Role'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.person),
-                                title: const Text('Traveller'),
-                                onTap: () async {
-                                  await updateUserRole('Traveller');
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.business),
-                                title: const Text('Travel Agency'),
-                                onTap: () async {
-                                  await updateUserRole('Travel Agency');
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Cancel'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
                 ListTile(
                   leading: const FaIcon(FontAwesomeIcons.map),
                   title: const Text('My Travelling Plan'),

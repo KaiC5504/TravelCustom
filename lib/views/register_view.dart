@@ -17,11 +17,14 @@ class RegisterView extends StatefulWidget {
 class _RegisterViewState extends State<RegisterView> {
   late final TextEditingController _email;
   late final TextEditingController _password;
+  late final TextEditingController _agencyCode;
+  String _selectedRole = 'Traveller';
 
   @override
   void initState() {
     _email = TextEditingController();
     _password = TextEditingController();
+    _agencyCode = TextEditingController();
     super.initState();
   }
 
@@ -29,17 +32,28 @@ class _RegisterViewState extends State<RegisterView> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _agencyCode.dispose();
     super.dispose();
   }
 
   Future<void> _registerUser() async {
     final email = _email.text;
     final password = _password.text;
+    final agencyCode = _agencyCode.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty ||
+        password.isEmpty ||
+        (_selectedRole == 'Travel Agency' && agencyCode.isEmpty)) {
       String errorMessage = 'Please fill in all fields';
       displayCustomErrorMessage(context, errorMessage);
       devtools.log('Empty fields');
+      return;
+    }
+
+    if (_selectedRole == 'Travel Agency' && agencyCode != '1212') {
+      String errorMessage = 'Invalid agency code';
+      displayCustomErrorMessage(context, errorMessage);
+      devtools.log('Invalid agency code');
       return;
     }
 
@@ -58,7 +72,8 @@ class _RegisterViewState extends State<RegisterView> {
           'name': '',
           'planId': planId,
           'favourites': [],
-          'role': 'traveller',
+          'role': _selectedRole, // Store role with proper capitalization
+          'agencyCode': _selectedRole == 'Travel Agency' ? agencyCode : null,
         });
 
         Navigator.of(context).pushNamedAndRemoveUntil(
@@ -141,6 +156,73 @@ class _RegisterViewState extends State<RegisterView> {
           PasswordInput(
             PasswordController: _password,
           ),
+
+          Center(
+            child: Container(
+              width: 300,
+              padding: const EdgeInsets.all(15),
+              child: DropdownButtonFormField<String>(
+                value: _selectedRole,
+                items: ['Traveller', 'Travel Agency']
+                    .map((role) => DropdownMenuItem(
+                          value: role,
+                          child: Text(
+                            role,
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedRole = value!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Register as',
+                  labelStyle: const TextStyle(fontSize: 18),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  filled: true,
+                  fillColor:
+                      Colors.grey[200], // Match email and password background
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                  constraints: BoxConstraints.tight(const Size.fromHeight(60)),
+                ),
+                style: const TextStyle(color: Colors.black, fontSize: 18),
+                dropdownColor: Colors.white,
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                isExpanded: true,
+                menuMaxHeight: 300, // Ensure the dropdown menu appears lower
+              ),
+            ),
+          ),
+          if (_selectedRole == 'Travel Agency')
+            Center(
+              child: Container(
+                width: 300,
+                padding: const EdgeInsets.all(15),
+                child: TextField(
+                  controller: _agencyCode,
+                  decoration: InputDecoration(
+                    labelText: 'Agency Code',
+                    labelStyle: const TextStyle(fontSize: 18),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    filled: true,
+                    fillColor:
+                        Colors.grey[200], // Match email and password background
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 15, horizontal: 10),
+                    constraints:
+                        BoxConstraints.tight(const Size.fromHeight(60)),
+                  ),
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
 
           //register button
           ElevatedButton(

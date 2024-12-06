@@ -12,7 +12,6 @@ class CustomErrorMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(15),
-      height: 90,
       decoration: const BoxDecoration(
         color: Color.fromARGB(255, 210, 127, 121),
         borderRadius: BorderRadius.all(
@@ -21,6 +20,7 @@ class CustomErrorMessage extends StatelessWidget {
       ),
       child: Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min, // Adjust height dynamically
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -33,15 +33,17 @@ class CustomErrorMessage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 5),
-            Text(
-              errorMessage,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
+            Flexible(
+              child: Text(
+                errorMessage,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3, // Allow up to 3 lines
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -65,12 +67,15 @@ void displayCustomErrorMessage(BuildContext context, String errorMessage) {
               const EdgeInsets.only(top: 0), // Ensures it starts at the top
           child: Align(
             alignment: Alignment.topCenter, // Position the message at the top
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
-              child: GestureDetector(
-                onTap:
-                    () {}, // Prevent dialog from closing when tapping on the message itself
-                child: CustomErrorMessage(errorMessage: errorMessage),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
+                child: GestureDetector(
+                  onTap:
+                      () {}, // Prevent dialog from closing when tapping on the message itself
+                  child: CustomErrorMessage(errorMessage: errorMessage),
+                ),
               ),
             ),
           ),
@@ -106,7 +111,7 @@ void displayCustomErrorMessage(BuildContext context, String errorMessage) {
 //               ),
 //             ),
 //           ),
-//         ),
+//         ), 
 //       );
 //     },
 //   );
