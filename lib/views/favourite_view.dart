@@ -42,11 +42,10 @@ class _FavouritePageState extends State<FavouritePage> {
 
       if (userDoc.exists && userDoc['favourites'] != null) {
         List<dynamic> favourites = userDoc['favourites'];
-        
+
         // Get all destinations first
-        QuerySnapshot destinationsSnapshot = await FirebaseFirestore.instance
-            .collection('destinations')
-            .get();
+        QuerySnapshot destinationsSnapshot =
+            await FirebaseFirestore.instance.collection('destinations').get();
 
         // For each destination, check its sub_destinations
         for (var destinationDoc in destinationsSnapshot.docs) {
@@ -60,7 +59,7 @@ class _FavouritePageState extends State<FavouritePage> {
                   .get();
 
               if (subDestDoc.exists) {
-                Map<String, dynamic> subDestinationData = 
+                Map<String, dynamic> subDestinationData =
                     subDestDoc.data() as Map<String, dynamic>;
                 subDestinationData['id'] = subDestDoc.id;
 
@@ -68,7 +67,8 @@ class _FavouritePageState extends State<FavouritePage> {
                   final ref = _storage
                       .ref()
                       .child('destination_images/${subDestDoc.id}.webp');
-                  Uint8List? destinationImageBytes = await ref.getData(100000000);
+                  Uint8List? destinationImageBytes =
+                      await ref.getData(100000000);
                   destinationImages[subDestDoc.id] = destinationImageBytes;
                 } catch (e) {
                   devtools.log('Error fetching image: $e');
@@ -163,8 +163,7 @@ class _FavouritePageState extends State<FavouritePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              destination['name'] ??
-                                  'Unknown Destination',
+                              destination['name'] ?? 'Unknown Destination',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 25,

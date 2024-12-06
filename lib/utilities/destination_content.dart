@@ -253,4 +253,42 @@ class DestinationContent {
       devtools.log('Error adding review: $e');
     }
   }
+  
+  Future<void> incrementClickCount(String destinationId, String subDestinationId) async {
+    try {
+      devtools.log('Attempting to increment click count for subDestinationId: $subDestinationId');
+      
+      final subDestinationRef = FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(destinationId)
+          .collection('sub_destinations')
+          .doc(subDestinationId);
+      
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(subDestinationRef);
+        
+        if (snapshot.exists) {
+          final currentClicks = snapshot.data()?['click_count'] ?? 0;
+          devtools.log('Current click count: $currentClicks');
+          
+          transaction.update(subDestinationRef, {
+            'click_count': currentClicks + 1
+          });
+          
+          devtools.log('Incrementing click count from $currentClicks to ${currentClicks + 1}');
+        } else {
+          devtools.log('Document does not exist, creating with initial click count');
+          transaction.set(subDestinationRef, {
+            'click_count': 1
+          }, SetOptions(merge: true));
+        }
+      });
+      
+      devtools.log('Click count transaction completed');
+    } catch (e) {
+      devtools.log('Error updating click count: $e');
+      devtools.log('Error stacktrace: ${StackTrace.current}');
+      rethrow;
+    }
+  }
 }
