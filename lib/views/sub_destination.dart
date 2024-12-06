@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'dart:developer' as devtools show log;
@@ -117,10 +118,10 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     }
   }
 
-  Future<void> _showSubDestinationDetails(BuildContext context,
-      Map<String, dynamic> subDes, bool fromLocationButton) async {
+  Future<void> _showSubDestinationDetails(BuildContext context, Map<String, dynamic> subDes, bool fromLocationButton) async {
     String authorName = await _getAuthorName(subDes['author'] ?? '');
 
+    // Open the dialog first
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -215,6 +216,14 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
         );
       },
     );
+
+    // Track user interaction after opening the dialog
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      await _destinationContent.trackUserViewInteraction(userId, subDes['id'], subDes);
+    } else {
+      devtools.log('User is not logged in');
+    }
   }
 
   @override

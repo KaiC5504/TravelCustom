@@ -106,24 +106,26 @@ class _TravelViewState extends State<TravelView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 60), // Increased top padding
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.menu, color: Colors.black),
+                    icon: Icon(Icons.menu,
+                        color: Colors.black, size: 30), // Increased size
                     onPressed: () {
                       // Handle menu button press
                     },
                   ),
                   Row(
                     children: [
-                      Icon(Icons.location_on, color: Colors.red),
+                      Icon(Icons.location_on,
+                          color: Colors.red, size: 30), // Increased size
                       const SizedBox(width: 5),
                       Text(
-                        'Babarsari, YK',
+                        'Malaysia',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18, // Increased font size
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
@@ -131,10 +133,12 @@ class _TravelViewState extends State<TravelView> {
                     ],
                   ),
                   IconButton(
-                    icon: Icon(Icons.search, color: Colors.black),
+                    icon: Icon(Icons.search,
+                        color: Colors.black, size: 30), // Increased size
                     onPressed: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const SearchPage()),
+                        MaterialPageRoute(
+                            builder: (context) => const SearchPage()),
                       );
                     },
                   ),
@@ -176,7 +180,8 @@ class _TravelViewState extends State<TravelView> {
                         // Handle button press
                       },
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.blueAccent, backgroundColor: Colors.white,
+                        foregroundColor: Colors.blueAccent,
+                        backgroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -196,10 +201,24 @@ class _TravelViewState extends State<TravelView> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildCategoryChip(Icons.filter, "All"),
-                    _buildCategoryChip(Icons.landscape, "Hill"),
-                    _buildCategoryChip(Icons.beach_access, "Beach"),
-                    _buildCategoryChip(Icons.hotel, "Hotel"),
+                    _buildCategoryChip(
+                        Icons.location_city, "Urban", Colors.blue),
+                    _buildCategoryChip(
+                        Icons.nightlife, "Nightlife", Colors.purple),
+                    _buildCategoryChip(
+                        Icons.history_edu, "History", Colors.brown),
+                    _buildCategoryChip(Icons.brush, "Art", Colors.pink),
+                    _buildCategoryChip(
+                        Icons.hiking, "Adventure", Colors.orange),
+                    _buildCategoryChip(
+                        Icons.beach_access, "Beach", Colors.cyan),
+                    _buildCategoryChip(Icons.nature, "Nature", Colors.green),
+                    _buildCategoryChip(
+                        Icons.agriculture, "Agriculture", Colors.teal),
+                    _buildCategoryChip(
+                        Icons.landscape, "Island", Colors.lightBlue),
+                    _buildCategoryChip(
+                        Icons.family_restroom, "Family-friendly", Colors.red),
                   ],
                 ),
               ),
@@ -208,7 +227,7 @@ class _TravelViewState extends State<TravelView> {
                 'Recommended Locations',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
+
               FutureBuilder<List<Map<String, dynamic>>>(
                 future: _recommendedDestinationsFuture,
                 builder: (context, snapshot) {
@@ -236,7 +255,8 @@ class _TravelViewState extends State<TravelView> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
-                      childAspectRatio: 0.9, // Adjusted aspect ratio for shorter height
+                      childAspectRatio:
+                          0.9, // Adjusted aspect ratio for shorter height
                     ),
                     itemCount: recommendedDestinations.length,
                     itemBuilder: (context, index) {
@@ -253,23 +273,50 @@ class _TravelViewState extends State<TravelView> {
     );
   }
 
-  Widget _buildCategoryChip(IconData icon, String label) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.blueAccent,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(color: Colors.white),
+  Widget _buildCategoryChip(IconData icon, String label, Color color) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => SearchPage(
+              fromLocationButton: false,
+              initialTags: [label], // Pass the selected tag as initial filter
+            ),
           ),
-        ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white, // Light, neutral background
+          borderRadius: BorderRadius.circular(30), // Oval shape
+          border: Border.all(color: color, width: 1), // Light border
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 5,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 30), // Icon at the top center
+            const SizedBox(height: 5), // Spacing between icon and text
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Sans-serif', // Clean, rounded, and sans-serif font
+              ),
+              textAlign: TextAlign.center, // Centered text
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -278,15 +325,20 @@ class _TravelViewState extends State<TravelView> {
     return GestureDetector(
       onTap: () {
         devtools.log(destinationData.toString());
-        String destinationId = destinationData['id'];
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => DestinationDetailPage(
-              destinationId: destinationId,
-              subdestinationId: null,
+        String destinationId = destinationData['destinationId'] ?? ''; // Main destination ID
+        String subdestinationId = destinationData['id'] ?? ''; // Sub-destination ID
+        if (destinationId.isNotEmpty && subdestinationId.isNotEmpty) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => DestinationDetailPage(
+                destinationId: destinationId,
+                subdestinationId: subdestinationId,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          devtools.log('Missing destinationId or subdestinationId');
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -298,10 +350,11 @@ class _TravelViewState extends State<TravelView> {
               offset: Offset(0, 4),
             ),
           ],
-          image: destinationData['images'] != null &&
-                  destinationData['images'].isNotEmpty
+          image: destinationData['image'] != null &&
+                  destinationData['image'].isNotEmpty
               ? DecorationImage(
-                  image: NetworkImage(destinationData['images'][0]),
+                  image:
+                      NetworkImage(destinationData['image']), // Updated field
                   fit: BoxFit.cover,
                 )
               : null,
@@ -320,7 +373,7 @@ class _TravelViewState extends State<TravelView> {
                   ),
                 ),
                 child: Text(
-                  destinationData['destination'] ?? 'No Destination',
+                  destinationData['name'] ?? 'No Destination', // Updated field
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -333,7 +386,8 @@ class _TravelViewState extends State<TravelView> {
             Positioned(
               top: 10,
               right: 10,
-              child: Icon(Icons.bookmark, color: Colors.white),
+              child:
+                  Icon(Icons.star, color: Colors.white), // Changed to star icon
             ),
           ],
         ),
@@ -343,54 +397,47 @@ class _TravelViewState extends State<TravelView> {
 }
 
 // Function to fetch recommended destinations based on user interactions
-// Function to fetch recommended destinations based on highest preference score and matching tags
-Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
-    String userId) async {
+Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(String userId) async {
   List<Map<String, dynamic>> recommendedDestinations = [];
 
   // Step 1: Query the interaction collection for the user, ordered by preference_score
   QuerySnapshot interactionSnapshot = await FirebaseFirestore.instance
       .collection('interaction')
       .where('user_id', isEqualTo: userId)
-      .orderBy('preference_score', descending: true) // Order by highest score
-      .limit(1) // Only get the document with the highest preference_score
+      .orderBy('preference_score', descending: true)
+      .limit(1)
       .get();
 
   if (interactionSnapshot.docs.isEmpty) {
-    // No interactions found for the user
     devtools.log("No interactions found for the user");
     return [];
   }
 
   // Step 2: Get the highest preference_score document
   var highestPreferenceInteraction = interactionSnapshot.docs.first;
-  var interactionData =
-      highestPreferenceInteraction.data() as Map<String, dynamic>;
+  var interactionData = highestPreferenceInteraction.data() as Map<String, dynamic>;
 
   // Extract the tags from the document
-  List<String> highestScoreTags =
-      List<String>.from(interactionData['tags'] ?? []);
+  List<String> highestScoreTags = List<String>.from(interactionData['tags'] ?? []);
 
   if (highestScoreTags.isEmpty) {
-    // No tags found in the highest score interaction
     devtools.log("No tags found in the highest score interaction");
     return [];
   }
 
-  // Step 3: Search the destinations collection where the tags match the interaction tags
+  // Step 3: Search the sub_destinations sub-collection where the tags match the interaction tags
   QuerySnapshot destinationSnapshot = await FirebaseFirestore.instance
-      .collection('destinations')
-      .where('tags',
-          arrayContainsAny:
-              highestScoreTags) // Find destinations that match any of the tags
+      .collectionGroup('sub_destinations')
+      .where('tags', arrayContainsAny: highestScoreTags)
       .get();
 
-  // Step 4: Add matching destinations to the recommendation list
+  // Step 4: Add matching sub-destinations to the recommendation list
   for (var doc in destinationSnapshot.docs) {
     var destinationData = doc.data() as Map<String, dynamic>;
     destinationData['id'] = doc.id;
+    destinationData['destinationId'] = doc.reference.parent.parent?.id;
     recommendedDestinations.add(destinationData);
   }
 
-  return recommendedDestinations; // Return the matching destinations
+  return recommendedDestinations;
 }

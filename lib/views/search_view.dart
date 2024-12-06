@@ -10,7 +10,8 @@ import 'dart:developer' as devtools show log;
 
 class SearchPage extends StatefulWidget {
   final bool fromLocationButton;
-  const SearchPage({super.key, this.fromLocationButton = false});
+  final List<String> initialTags; // Add initialTags parameter
+  const SearchPage({super.key, this.fromLocationButton = false, this.initialTags = const []});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -27,9 +28,24 @@ class _SearchPageState extends State<SearchPage> {
   Map<String, Uint8List?> destinationImages = {};
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  List<String> selectedTags = [];
+  List<String> availableTags = [
+    'Urban',
+    'Nightlife',
+    'History',
+    'Art',
+    'Adventure',
+    'Beach',
+    'Nature',
+    'Agriculture',
+    'Island',
+    'Family-friendly'
+  ];
+
   @override
   void initState() {
     super.initState();
+    selectedTags = widget.initialTags; // Set initial tags
     _fetchDestinations();
   }
 
@@ -52,6 +68,7 @@ class _SearchPageState extends State<SearchPage> {
         'id': doc.id, // subdestinationId
         'name': doc['name'],
         'destinationId': doc.reference.parent.parent?.id, // main collection id
+        'tags': List<String>.from(doc['tags'] ?? []), // Fetch tags
       };
     }).toList();
 
@@ -97,16 +114,25 @@ class _SearchPageState extends State<SearchPage> {
     return input.trim().toLowerCase();
   }
 
-  // Filter local list based on search query
+  // Filter local list based on search query and selected tags
   List<Map<String, dynamic>> _filteredDestinations() {
     List<Map<String, dynamic>> filteredList = [];
 
-    if (searchQuery.isEmpty) {
+    devtools.log('Selected Tags: $selectedTags');
+
+    if (searchQuery.isEmpty && selectedTags.isEmpty) {
       filteredList = List.from(localDestination);
     } else {
       String normalizedQuery = _normalizeQuery(searchQuery);
       filteredList = localDestination.where((destination) {
-        return _normalizeQuery(destination['name']).startsWith(normalizedQuery);
+        bool matchesQuery =
+            _normalizeQuery(destination['name']).startsWith(normalizedQuery);
+        bool matchesTags = selectedTags.isEmpty ||
+            selectedTags
+                .any((tag) => destination['tags']?.contains(tag) ?? false);
+        devtools.log(
+            'Destination: ${destination['name']}, Tags: ${destination['tags']}, Matches: $matchesTags');
+        return matchesQuery && matchesTags;
       }).toList();
     }
 
@@ -121,7 +147,72 @@ class _SearchPageState extends State<SearchPage> {
           (a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
     }
 
+    devtools
+        .log('Filtered List: ${filteredList.map((d) => d['name']).toList()}');
+
     return filteredList;
+  }
+
+  void _showTagSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        List<String> tempSelectedTags = List.from(selectedTags);
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Select Tags'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: availableTags.map((String tag) {
+                    return CheckboxListTile(
+                      value: tempSelectedTags.contains(tag),
+                      title: Text(tag),
+                      onChanged: (bool? checked) {
+                        setState(() {
+                          if (checked == true) {
+                            tempSelectedTags.add(tag);
+                          } else {
+                            tempSelectedTags.remove(tag);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Apply'),
+                  onPressed: () {
+                    setState(() {
+                      selectedTags = List.from(tempSelectedTags);
+                      devtools.log('Applied Tags: $selectedTags');
+                    });
+                    Navigator.of(context).pop();
+                    _applyFilters(); // Ensure the filter is applied
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _applyFilters() {
+    setState(() {
+      final filteredDestinations = _filteredDestinations();
+      devtools.log(
+          'Filtered List: ${filteredDestinations.map((d) => d['name']).toList()}');
+    });
   }
 
   @override
@@ -155,21 +246,18 @@ class _SearchPageState extends State<SearchPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 PopupMenuButton<String>(
-                  onSelected: (value) {},
+                  onSelected: (value) {
+                    if (value == 'Tags') {
+                      _showTagSelectionDialog();
+                    }
+                  },
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<String>>[
                     const PopupMenuItem<String>(
-                      value: 'Price',
-                      child: Text('Filter by Price'),
+                      value: 'Tags',
+                      child: Text('Filter by Tags'),
                     ),
-                    const PopupMenuItem<String>(
-                      value: 'Rating',
-                      child: Text('Filter by Rating'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'Distance',
-                      child: Text('Filter by Distance'),
-                    ),
+                    // Add other filter options here if needed
                   ],
                   color: const Color(0xFFD4EAF7),
                   position: PopupMenuPosition.under,
@@ -249,12 +337,23 @@ class _SearchPageState extends State<SearchPage> {
             const SizedBox(height: 20),
 
             Center(
-              child: Text(
-                'Current Sort: $selectedSort',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    'Current Sort: $selectedSort',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (selectedTags.isNotEmpty)
+                    Text(
+                      'Filter by: ${selectedTags.join(', ')}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                      ),
+                    ),
+                ],
               ),
             ),
 
@@ -297,7 +396,6 @@ class _SearchPageState extends State<SearchPage> {
                 return GestureDetector(
                   onTap: () async {
                     if (widget.fromLocationButton) {
-                      // If the Location Button triggered this, navigate to `DestinationDetailPage`
                       final subDestinationName = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -308,20 +406,17 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                       );
-
-                      // Log and pass back the received `subDestinationName` from DestinationDetailPage
                       devtools.log(
                           'Received subDestinationName from DestinationDetailPage: $subDestinationName');
                       if (subDestinationName != null) {
-                        Navigator.pop(context,
-                            subDestinationName); // Pass subDestinationName back to PlanningView
+                        Navigator.pop(context, subDestinationName);
                       }
                     } else {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => DestinationDetailPage(
                             destinationId: destination['destinationId'],
-                            subdestinationId: destination['id'], 
+                            subdestinationId: destination['id'],
                           ),
                         ),
                       );
