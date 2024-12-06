@@ -118,101 +118,133 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     }
   }
 
-  Future<void> _showSubDestinationDetails(BuildContext context, Map<String, dynamic> subDes, bool fromLocationButton) async {
+  Future<void> _showSubDestinationDetails(BuildContext context,
+      Map<String, dynamic> subDes, bool fromLocationButton) async {
     String authorName = await _getAuthorName(subDes['author'] ?? '');
 
     // Open the dialog first
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(
-                        subDes['image'] ?? '',
-                        height: 150,
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Text('No Image'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    subDes['name'] ?? 'Unknown Place',
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Description:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subDes['description'] ?? 'N/A',
-                    softWrap: true,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Estimated Cost:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'RM ${subDes['estimate_cost']?.toString() ?? 'N/A'}',
-                    softWrap: true,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Location:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subDes['location'] ?? 'Location not available',
-                    softWrap: true,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Author:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    authorName,
-                    softWrap: true,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 20),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () =>
-                          _onAddToPlan(subDes['name'] ?? 'Unknown Place'),
-                      child: const Text('Add to plan'),
-                    ),
-                  ),
-                ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
-            ),
-          ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.network(
+                            subDes['image'] ?? '',
+                            height: 150,
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Text('No Image'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              subDes['name'] ?? 'Unknown Place',
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              subDes['isFavourited'] ?? false
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: subDes['isFavourited'] ?? false
+                                  ? const Color.fromARGB(255, 235, 211, 0)
+                                  : Colors.grey,
+                              size: 30, // Increase the size of the star
+                            ),
+                            onPressed: () async {
+                              bool newFavouriteStatus =
+                                  !(subDes['isFavourited'] ?? false);
+                              await _toggleFavourite(
+                                  subDes['id'], newFavouriteStatus);
+                              setState(() {
+                                subDes['isFavourited'] = newFavouriteStatus;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Description:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subDes['description'] ?? 'N/A',
+                        softWrap: true,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Estimated Cost:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'RM ${subDes['estimate_cost']?.toString() ?? 'N/A'}',
+                        softWrap: true,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Location:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subDes['location'] ?? 'Location not available',
+                        softWrap: true,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Author:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        authorName,
+                        softWrap: true,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () =>
+                              _onAddToPlan(subDes['name'] ?? 'Unknown Place'),
+                          child: const Text('Add to plan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -220,10 +252,24 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     // Track user interaction after opening the dialog
     String? userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
-      await _destinationContent.trackUserViewInteraction(userId, subDes['id'], subDes);
+      await _destinationContent.trackUserViewInteraction(
+          userId, subDes['id'], subDes);
     } else {
       devtools.log('User is not logged in');
     }
+  }
+
+  Future<void> _toggleFavourite(
+      String subDestinationId, bool isFavourited) async {
+    await _destinationContent.toggleFavourite(subDestinationId, isFavourited);
+    setState(() {
+      _subDestinations = _subDestinations.map((subDes) {
+        if (subDes['id'] == subDestinationId) {
+          subDes['isFavourited'] = isFavourited;
+        }
+        return subDes;
+      }).toList();
+    });
   }
 
   @override
@@ -278,6 +324,22 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                                             stackTrace) =>
                                         const Center(child: Text('No Image')),
                                   ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  icon: Icon(
+                                    subs['isFavourited'] ?? false
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    color: subs['isFavourited'] ?? false
+                                        ? const Color.fromARGB(255, 192, 172, 0)
+                                        : Colors.grey,
+                                  ),
+                                  onPressed: () => _toggleFavourite(subs['id'],
+                                      !(subs['isFavourited'] ?? false)),
                                 ),
                               ),
                               Positioned(

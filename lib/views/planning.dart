@@ -40,6 +40,9 @@ class _PlanningViewState extends State<PlanningView> {
   Map<String, String> destinationNames = {};
   final ScrollController _scrollController = ScrollController();
   bool isLoading = true;
+  final ValueNotifier<int> _reviewCountNotifier = ValueNotifier<int>(0);
+  final GlobalKey<PlanReviewsWidgetState> _reviewsWidgetKey =
+      GlobalKey<PlanReviewsWidgetState>();
 
   @override
   void initState() {
@@ -413,14 +416,16 @@ class _PlanningViewState extends State<PlanningView> {
     }
   }
 
-  Future<void> _saveGeneratedPlanToFirestore(List<Map<String, dynamic>> generatedPlan) async {
+  Future<void> _saveGeneratedPlanToFirestore(
+      List<Map<String, dynamic>> generatedPlan) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     final planId = await _getUserPlanId();
     if (planId.isEmpty) return;
 
-    final planDocRef = FirebaseFirestore.instance.collection('travel_plans').doc(planId);
+    final planDocRef =
+        FirebaseFirestore.instance.collection('travel_plans').doc(planId);
 
     await planDocRef.update({
       'days': generatedPlan,
@@ -450,6 +455,97 @@ class _PlanningViewState extends State<PlanningView> {
     return parsedPlan;
   }
 
+  void _showReviewDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        double rating = 0;
+        TextEditingController reviewController = TextEditingController();
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.grey[200],
+              title: const Center(child: Text('Write a Review')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Rating:',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color:
+                              index < rating ? Colors.amber[600] : Colors.grey,
+                          size: 40.0,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            rating = index + 1.0;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Review:',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  TextField(
+                    controller: reviewController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await FirebaseFirestore.instance
+                        .collection('platform_plans')
+                        .doc(widget.planId)
+                        .collection('reviews')
+                        .add({
+                      'userId': FirebaseAuth.instance.currentUser?.uid,
+                      'rating': rating,
+                      'review_content': reviewController.text,
+                      'timestamp': FieldValue.serverTimestamp(),
+                    });
+                    Navigator.of(context).pop();
+                    _reviewsWidgetKey.currentState?.refreshReviews();
+                  },
+                  child: const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -471,11 +567,9 @@ class _PlanningViewState extends State<PlanningView> {
                 padding: const EdgeInsets.all(16.0),
                 child: activities.isEmpty
                     ? ListView(
-                        // A ListView to enable pull-down refresh when empty
                         children: [
                           SizedBox(
-                            height: MediaQuery.of(context).size.height *
-                                0.8, // Set height to make it scrollable
+                            height: MediaQuery.of(context).size.height * 0.8,
                             child: Center(
                               child: Text(
                                 'No Travel Plan',
@@ -487,23 +581,67 @@ class _PlanningViewState extends State<PlanningView> {
                           ),
                         ],
                       )
-                    : ListView.builder(
-                        itemCount: activities.length,
-                        itemBuilder: (context, index) {
-                          final dayData = activities[index];
-                          final dayTitle = dayData['day_title'] ?? 'No Title';
-                          final sideNotes =
-                              List<String>.from(dayData['side_note'] ?? []);
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 50.0),
-                            child: _buildPlanDays(
-                              'Day ${index + 1}',
-                              dayTitle,
-                              sideNotes,
+                    : ListView(
+                        children: [
+                          // Only show reviews section for platform plans
+                          if (widget.collectionName == 'platform_plans') ...[
+                            const Text(
+                              "Recent Reviews: ",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          );
-                        },
+                            const SizedBox(height: 10),
+                            PlanReviewsWidget(
+                              key: _reviewsWidgetKey,
+                              planId: widget.planId ?? '',
+                              onReviewsLoaded: (reviewCount) {
+                                _reviewCountNotifier.value = reviewCount;
+                              },
+                            ),
+                            const SizedBox(height: 50),
+                          ],
+                          // Existing plan days
+                          ...List.generate(
+                            activities.length,
+                            (index) {
+                              final dayData = activities[index];
+                              final dayTitle =
+                                  dayData['day_title'] ?? 'No Title';
+                              final sideNotes =
+                                  List<String>.from(dayData['side_note'] ?? []);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 50.0),
+                                child: _buildPlanDays(
+                                  'Day ${index + 1}',
+                                  dayTitle,
+                                  sideNotes,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          if (widget.collectionName == 'platform_plans') ...[
+                            Center(
+                              child: ElevatedButton(
+                                onPressed: _showReviewDialog,
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: Colors.grey[800],
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                                child: const Text('Write a Review'),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
               ),
             ),
@@ -637,4 +775,142 @@ Widget _buildPlanDays(String day, String title, List<String> sideNotes) {
       ),
     ],
   );
+}
+
+class PlanReviewsWidget extends StatefulWidget {
+  final String planId;
+  final Function(int) onReviewsLoaded;
+
+  const PlanReviewsWidget({
+    super.key,
+    required this.planId,
+    required this.onReviewsLoaded,
+  });
+
+  @override
+  PlanReviewsWidgetState createState() => PlanReviewsWidgetState();
+}
+
+class PlanReviewsWidgetState extends State<PlanReviewsWidget> {
+  Future<List<Map<String, dynamic>>> _fetchReviews() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('platform_plans')
+          .doc(widget.planId)
+          .collection('reviews')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      final reviews = await Future.wait(querySnapshot.docs.map((doc) async {
+        final data = doc.data();
+        final userId = data['userId'] as String?;
+        String userName = 'Anonymous';
+
+        if (userId != null) {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
+          userName = userDoc.data()?['name'] ?? 'Anonymous';
+        }
+
+        return {
+          ...data,
+          'userName': userName,
+        };
+      }));
+
+      widget.onReviewsLoaded(reviews.length);
+      return reviews;
+    } catch (e) {
+      devtools.log('Error fetching reviews: $e');
+      widget.onReviewsLoaded(0);
+      return [];
+    }
+  }
+
+  void refreshReviews() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchReviews(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return Text('No reviews available');
+        }
+
+        final reviews = snapshot.data!;
+        return SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return Container(
+                width: 200,
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review['userName'] ?? 'Anonymous',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Text(
+                          review['rating'].toInt().toString(),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                          size: 23,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      review['review_content'] ?? 'No review',
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 }

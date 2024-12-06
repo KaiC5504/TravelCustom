@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'package:travelcustom/views/sub_destination.dart';
 import 'dart:developer' as devtools show log;
@@ -53,13 +52,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     bool isFavorited =
         await _destinationContent.checkIfFavourited(widget.destinationId);
     _isFavoritedNotifier.value = isFavorited;
-  }
-
-  void _toggleFavourite() async {
-    bool newFavoritedState = !_isFavoritedNotifier.value;
-    await _destinationContent.toggleFavourite(
-        widget.destinationId, newFavoritedState);
-    _isFavoritedNotifier.value = newFavoritedState;
   }
 
   void trackUserViewInteraction(Map<String, dynamic> subDestinationData) async {
@@ -244,25 +236,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                           ),
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: _isFavoritedNotifier,
-                          builder: (context, isFavourited, child) {
-                            return IconButton(
-                              onPressed: _toggleFavourite,
-                              icon: FaIcon(
-                                FontAwesomeIcons.solidStar,
-                                color: isFavourited
-                                    ? Colors.yellow
-                                    : const Color.fromARGB(255, 169, 169, 169)
-                                        .withOpacity(0.7),
-                                size: 36.0,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      // Remove the favorite button from here
                     ],
                   ),
                 ),

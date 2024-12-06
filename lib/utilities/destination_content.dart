@@ -22,7 +22,7 @@ class DestinationContent {
     return false;
   }
 
-  Future<void> toggleFavourite(String destinationId, bool isFavourited) async {
+  Future<void> toggleFavourite(String subDestinationId, bool isFavourited) async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       devtools.log('User is not logged in');
@@ -34,12 +34,12 @@ class DestinationContent {
     try {
       if (isFavourited) {
         await userDocRef.update({
-          'favourites': FieldValue.arrayUnion([destinationId])
+          'favourites': FieldValue.arrayUnion([subDestinationId])
         });
         devtools.log('Favourite added successfully');
       } else {
         await userDocRef.update({
-          'favourites': FieldValue.arrayRemove([destinationId])
+          'favourites': FieldValue.arrayRemove([subDestinationId])
         });
         devtools.log('Favourite removed successfully');
       }

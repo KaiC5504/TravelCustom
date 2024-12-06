@@ -97,7 +97,7 @@ class _TravelViewState extends State<TravelView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[200],
       body: RefreshIndicator(
         onRefresh: refreshTravelData,
         child: SingleChildScrollView(
@@ -280,7 +280,7 @@ class _TravelViewState extends State<TravelView> {
           MaterialPageRoute(
             builder: (context) => SearchPage(
               fromLocationButton: false,
-              initialTags: [label], // Pass the selected tag as initial filter
+              initialTags: [label],
             ),
           ),
         );
@@ -289,7 +289,7 @@ class _TravelViewState extends State<TravelView> {
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white, // Light, neutral background
+          color: Colors.grey[200],
           borderRadius: BorderRadius.circular(30), // Oval shape
           border: Border.all(color: color, width: 1), // Light border
           boxShadow: [
@@ -325,8 +325,10 @@ class _TravelViewState extends State<TravelView> {
     return GestureDetector(
       onTap: () {
         devtools.log(destinationData.toString());
-        String destinationId = destinationData['destinationId'] ?? ''; // Main destination ID
-        String subdestinationId = destinationData['id'] ?? ''; // Sub-destination ID
+        String destinationId =
+            destinationData['destinationId'] ?? ''; // Main destination ID
+        String subdestinationId =
+            destinationData['id'] ?? ''; // Sub-destination ID
         if (destinationId.isNotEmpty && subdestinationId.isNotEmpty) {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -397,7 +399,8 @@ class _TravelViewState extends State<TravelView> {
 }
 
 // Function to fetch recommended destinations based on user interactions
-Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(String userId) async {
+Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
+    String userId) async {
   List<Map<String, dynamic>> recommendedDestinations = [];
 
   // Step 1: Query the interaction collection for the user, ordered by preference_score
@@ -415,10 +418,12 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(String userId) a
 
   // Step 2: Get the highest preference_score document
   var highestPreferenceInteraction = interactionSnapshot.docs.first;
-  var interactionData = highestPreferenceInteraction.data() as Map<String, dynamic>;
+  var interactionData =
+      highestPreferenceInteraction.data() as Map<String, dynamic>;
 
   // Extract the tags from the document
-  List<String> highestScoreTags = List<String>.from(interactionData['tags'] ?? []);
+  List<String> highestScoreTags =
+      List<String>.from(interactionData['tags'] ?? []);
 
   if (highestScoreTags.isEmpty) {
     devtools.log("No tags found in the highest score interaction");

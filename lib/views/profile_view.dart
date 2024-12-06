@@ -14,6 +14,7 @@ import 'dart:developer' as devtools show log;
 import 'package:travelcustom/views/favourite_view.dart';
 import 'package:travelcustom/views/profile_edit.dart';
 import 'package:path/path.dart' as p;
+import 'package:travelcustom/views/statistic.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -275,6 +276,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     );
                   },
                 ),
+                if (role == 'Travel Agency')
+                  ListTile(
+                    leading: const Icon(Icons.bar_chart),
+                    title: const Text('Statistics'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => const StatisticPage()),
+                      );
+                    },
+                  ),
                 ListTile(
                   leading: const Icon(Icons.logout),
                   title: const Text('Logout'),
