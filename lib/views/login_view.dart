@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as devtools show log;
@@ -14,21 +15,40 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  late final TextEditingController _email;
+  late final TextEditingController _usernameOrEmail;
   late final TextEditingController _password;
 
   @override
   void initState() {
-    _email = TextEditingController();
+    _usernameOrEmail = TextEditingController();
     _password = TextEditingController();
     super.initState();
   }
 
   @override
   void dispose() {
-    _email.dispose();
+    _usernameOrEmail.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  Future<String?> _getEmailFromUsername(String username) async {
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first['email'] as String;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      devtools.log('Error fetching email for username: $e');
+      return null;
+    }
   }
 
   @override
@@ -37,7 +57,9 @@ class _LoginViewState extends State<LoginView> {
       appBar: AppBar(
         title: const Text('Login', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 162, 136, 222),
+        scrolledUnderElevation: 0,
       ),
+      backgroundColor: Colors.grey[200],
       body: Column(
         children: [
           Center(
@@ -53,12 +75,13 @@ class _LoginViewState extends State<LoginView> {
               width: 300,
               padding: const EdgeInsets.all(15),
               child: TextField(
-                controller: _email,
+                controller: _usernameOrEmail,
                 enableSuggestions: false,
                 autocorrect: false,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                    labelText: 'Email', border: OutlineInputBorder()),
+                    labelText: 'Username or Email',
+                    border: OutlineInputBorder()),
               ),
             ),
           ),
@@ -71,14 +94,27 @@ class _LoginViewState extends State<LoginView> {
           //register button
           ElevatedButton(
             onPressed: () async {
-              final email = _email.text;
+              final usernameOrEmail = _usernameOrEmail.text;
               final password = _password.text;
 
-              if (email.isEmpty || password.isEmpty) {
+              if (usernameOrEmail.isEmpty || password.isEmpty) {
                 String errorMessage = 'Please fill in all fields';
                 displayCustomErrorMessage(context, errorMessage);
                 devtools.log('Empty fields');
                 return;
+              }
+
+              String? email = usernameOrEmail;
+
+              if (!usernameOrEmail.contains('@') &&
+                  !usernameOrEmail.contains('.')) {
+                email = await _getEmailFromUsername(usernameOrEmail);
+                if (email == null) {
+                  String errorMessage = 'Username not found';
+                  displayCustomErrorMessage(context, errorMessage);
+                  devtools.log('Username not found');
+                  return;
+                }
               }
 
               try {

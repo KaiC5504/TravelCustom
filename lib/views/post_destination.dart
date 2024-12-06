@@ -23,8 +23,16 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
   File? _image;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _costController = TextEditingController();
   final List<String> _selectedTags = [];
+  List<String> states = [];
+  String? selectedState;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStates(); // Fetch states when the widget is initialized
+  }
 
   Future<void> _pickImage() async {
     final pickedFile =
@@ -107,10 +115,65 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
     }
   }
 
+  Future<void> _fetchStates() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('destinations').get();
+      setState(() {
+        states = snapshot.docs
+            .map((doc) => doc['destination'] as String) // Extract state names
+            .toList();
+      });
+    } catch (e) {
+      devtools.log('Error fetching states: $e');
+    }
+  }
+
+  void _showStatePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          height: 450, // Adjust height to control visible items
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Select a State',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: states.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(states[index]),
+                      onTap: () {
+                        setState(() {
+                          selectedState = states[index];
+                        });
+                        Navigator.pop(context); // Close the modal
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _uploadDestination() async {
     if (_nameController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
-        _locationController.text.isEmpty ||
+        selectedState == null ||
         _image == null ||
         _selectedTags.isEmpty) {
       devtools.log('Please fill all fields and upload an image.');
@@ -141,35 +204,45 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         return;
       }
 
-      final destinationRef =
-          FirebaseFirestore.instance.collection('destinations').doc();
-      final destinationId = destinationRef.id;
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('destinations')
+          .where('destination', isEqualTo: selectedState)
+          .get();
 
-      final destinationData = {
+      if (querySnapshot.docs.isEmpty) {
+        devtools.log('Selected state not found in destinations');
+        return;
+      }
+
+      final destinationRef = querySnapshot.docs.first.reference;
+
+      final subDestinationData = {
         'author': user.uid,
-        'average_rating': 0,
         'description': _descriptionController.text,
-        'destination': _nameController.text,
-        'images': [],
-        'location': _locationController.text,
-        'number_of_reviews': 0,
+        'name': _nameController.text,
+        'image': '',
+        'estimate_cost':
+            double.tryParse(_costController.text)?.toStringAsFixed(2) ?? '0.00',
+        'location': selectedState,
         'post_date': Timestamp.now(),
         'tags': _selectedTags,
       };
 
-      await destinationRef.set(destinationData);
+      final subDestinationRef =
+          destinationRef.collection('sub_destinations').doc();
+      await subDestinationRef.set(subDestinationData);
       devtools.log('Destination uploaded successfully');
 
       // Upload image to Firebase Storage
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child('destination_images/$destinationId.webp');
+          .child('destination_images/${subDestinationRef.id}.webp');
       await storageRef.putFile(_image!);
       final imageUrl = await storageRef.getDownloadURL();
 
       // Update destination document with image URL
-      await destinationRef.update({
-        'images': [imageUrl]
+      await subDestinationRef.update({
+        'image': imageUrl,
       });
       devtools.log('Image uploaded successfully and URL added to Firestore');
 
@@ -258,15 +331,15 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                 ),
               ),
             ),
-            SizedBox(height: 20.0),
+            SizedBox(height: 15.0),
             Text(
-              'Name of Destination',
+              'Location Name',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16.0,
               ),
             ),
-            SizedBox(height: 8.0),
+            SizedBox(height: 6.0),
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
@@ -278,7 +351,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                 fillColor: Colors.white,
               ),
             ),
-            SizedBox(height: 20.0),
+            SizedBox(height: 15.0),
             Text(
               'Description',
               style: TextStyle(
@@ -286,7 +359,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                 fontSize: 16.0,
               ),
             ),
-            SizedBox(height: 8.0),
+            SizedBox(height: 6.0),
             TextField(
               controller: _descriptionController,
               decoration: InputDecoration(
@@ -298,24 +371,61 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                 fillColor: Colors.white,
               ),
             ),
-            SizedBox(height: 20.0),
+            SizedBox(height: 15.0),
             Text(
-              'Location',
+              'Estimated Cost',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16.0,
               ),
             ),
-            SizedBox(height: 8.0),
+            SizedBox(height: 6.0),
             TextField(
-              controller: _locationController,
+              controller: _costController,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: '',
+                prefixText: 'RM ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 filled: true,
                 fillColor: Colors.white,
+              ),
+            ),
+            SizedBox(height: 15.0),
+            Text(
+              'State',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16.0,
+              ),
+            ),
+            SizedBox(height: 6.0),
+            GestureDetector(
+              onTap: () => _showStatePicker(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0, vertical: 16.0),
+                width: MediaQuery.of(context).size.width * 0.6, // Adjust width
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12.0),
+                  border: Border.all(color: Colors.grey, width: 1),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedState ?? 'Select a state',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color:
+                            selectedState == null ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
+                ),
               ),
             ),
             SizedBox(height: 20.0),

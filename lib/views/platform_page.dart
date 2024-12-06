@@ -76,9 +76,9 @@ class _PlatformPageState extends State<PlatformPage> {
   void _toggleContent(bool showDestinations) {
     setState(() {
       this.showDestinations = showDestinations;
-      if (showDestinations) {
+      if (showDestinations && destinationPosts.isEmpty) {
         _fetchDestinationPosts();
-      } else {
+      } else if (!showDestinations && planPosts.isEmpty) {
         _fetchPlanPosts();
       }
     });
@@ -204,18 +204,21 @@ class _PlatformPageState extends State<PlatformPage> {
                 splashColor: Color.fromARGB(255, 91, 91, 91).withOpacity(0.2),
                 highlightColor: Color.fromARGB(255, 91, 91, 91)
                     .withOpacity(0.2), // Highlight color when pressed
-                child: Container(
-                  width: 140,
-                  height: 39, // Half the height for a semi-circle
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(45),
+                child: Hero(
+                  tag: 'platform_add_button', 
+                  child: Container(
+                    width: 140,
+                    height: 39, // Half the height for a semi-circle
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(45),
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    FontAwesomeIcons.plus,
-                    color: Colors.white,
+                    child: Icon(
+                      FontAwesomeIcons.plus,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -252,7 +255,8 @@ class _PlatformPageState extends State<PlatformPage> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => DestinationDetailPage(
-                                  destinationId: post['destinationId']),
+                                destinationId: post['destinationId'], subdestinationId: post['subDestinationId'],
+                              ),
                             ),
                           );
                         },
@@ -267,6 +271,7 @@ class _PlatformPageState extends State<PlatformPage> {
                                     backgroundImage: profilePicture != null
                                         ? MemoryImage(profilePicture)
                                         : null,
+                                    backgroundColor: Colors.grey[200],
                                     child: profilePicture == null
                                         ? Icon(Icons.person)
                                         : null,
@@ -276,6 +281,11 @@ class _PlatformPageState extends State<PlatformPage> {
                                     post['authorName'],
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(width: 5.0),
+                                  Text(
+                                    '(${post['authorRole']})',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
                                   ),
                                   Spacer(),
                                   Text(
@@ -293,9 +303,11 @@ class _PlatformPageState extends State<PlatformPage> {
                                     fontSize: 16.0),
                               ),
                               SizedBox(height: 8.0),
-                              destinationImages[post['destinationId']] != null
+                              destinationImages[post['subDestinationId']] !=
+                                      null
                                   ? Image.memory(
-                                      destinationImages[post['destinationId']]!,
+                                      destinationImages[
+                                          post['subDestinationId']]!,
                                       height: 200.0,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
@@ -362,6 +374,7 @@ class _PlatformPageState extends State<PlatformPage> {
                                     backgroundImage: profilePicture != null
                                         ? MemoryImage(profilePicture)
                                         : null,
+                                        backgroundColor: Colors.grey[300],
                                     child: profilePicture == null
                                         ? Icon(Icons.person)
                                         : null,
@@ -371,6 +384,11 @@ class _PlatformPageState extends State<PlatformPage> {
                                     post['authorName'],
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(width: 5.0),
+                                  Text(
+                                    '(${post['authorRole']})',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
                                   ),
                                   Spacer(),
                                   Text(

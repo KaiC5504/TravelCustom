@@ -1,10 +1,16 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:typed_data';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import 'package:travelcustom/views/detail_view.dart';
+import 'package:travelcustom/views/destination_detail.dart';
+import 'dart:developer' as devtools show log;
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final bool fromLocationButton;
+  const SearchPage({super.key, this.fromLocationButton = false});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -14,42 +20,76 @@ class _SearchPageState extends State<SearchPage> {
   String searchQuery = '';
   String selectedSort = 'Rating';
   Timer? _debounce;
+  bool _isLoading = true;
 
   // Local list to store the fetched destinations
   List<Map<String, dynamic>> localDestination = [];
+  Map<String, Uint8List?> destinationImages = {};
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   @override
   void initState() {
     super.initState();
-    _fetchDestinations(); // Fetch destinations on page load
+    _fetchDestinations();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
-    QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('destinations').get();
     setState(() {
-      localDestination = snapshot.docs.map((doc) {
-        return {
-          'id': doc.id, // You can use this ID as a unique identifier
-          'name': doc['destination'],
-          'rating': doc['average_rating'],
-          'imageUrl': (doc['images'] as List<dynamic>).isNotEmpty
-              ? doc['images'][0]
-              : '',
-          'popularity': doc['number_of_reviews'],
-        };
-      }).toList();
+      _isLoading = true;
     });
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collectionGroup('sub_destinations')
+        .get();
+    List<Map<String, dynamic>> fetchedDestinations = snapshot.docs.map((doc) {
+      return {
+        'id': doc.id, // subdestinationId
+        'name': doc['name'],
+        'destinationId': doc.reference.parent.parent?.id, // main collection id
+      };
+    }).toList();
+
+    // Fetch images from Firebase Storage
+    for (var destination in fetchedDestinations) {
+      String destinationId = destination['id'];
+      try {
+        final ref =
+            _storage.ref().child('destination_images/$destinationId.webp');
+        Uint8List? destinationImageBytes = await ref.getData(100000000);
+        destinationImages[destinationId] = destinationImageBytes;
+      } catch (e) {
+        if (e is FirebaseException && e.code == 'object-not-found') {
+          devtools.log(
+              'No destination image found for $destinationId, using default image.');
+        } else {
+          devtools.log('Error fetching image for $destinationId: $e');
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        localDestination = fetchedDestinations;
+        _isLoading = false;
+      });
+    }
   }
 
   // Handle debounced search input
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
-      setState(() {
-        searchQuery = query;
-      });
+      if (mounted) {
+        setState(() {
+          searchQuery = query;
+        });
+      }
     });
   }
 
@@ -72,26 +112,23 @@ class _SearchPageState extends State<SearchPage> {
 
     // Apply sorting based on the selectedSort value
     if (selectedSort == 'Name') {
-      filteredList.sort((a, b) => a['name'].compareTo(b['name']));
+      filteredList.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
     } else if (selectedSort == 'Rating') {
-      filteredList.sort((a, b) => b['rating'].compareTo(a['rating']));
+      filteredList
+          .sort((a, b) => (b['rating'] ?? 0).compareTo(a['rating'] ?? 0));
     } else if (selectedSort == 'Popularity') {
-      // Assuming you have a 'popularity' field
-      filteredList.sort((a, b) => b['popularity'].compareTo(a['popularity']));
+      filteredList.sort(
+          (a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
     }
 
     return filteredList;
   }
 
   @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final filteredDestinations = _filteredDestinations();
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
@@ -224,91 +261,125 @@ class _SearchPageState extends State<SearchPage> {
             const SizedBox(height: 10),
 
             // ListView to display local data
-            Expanded(
-              child: _filteredDestinations().isEmpty
-                  ? Center(
-                      child: Text(
-                        'No Destination Found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _filteredDestinations().length,
-                      itemBuilder: (context, index) {
-                        var destination = _filteredDestinations()[index];
-                        return GestureDetector(
-                          onTap: () {
-                            // Navigate to the detailed page when tapped
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => DetailsPage(
-                                  destinationId:
-                                      destination['id'], // Pass the ID or name
-                                ),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: Container(
-                              height: 200,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                image: destination['imageUrl'] != null
-                                    ? DecorationImage(
-                                        image: NetworkImage(
-                                            destination['imageUrl']),
-                                        fit: BoxFit.cover,
-                                        colorFilter: ColorFilter.mode(
-                                          Colors.black.withOpacity(0.4),
-                                          BlendMode.darken,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      destination['name'] ??
-                                          'Unknown Destination',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'Rating: ${destination['rating']?.toString() ?? 'N/A'}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const Icon(Icons.star,
-                                            color: Colors.yellow, size: 18),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+            _isLoading
+                ? Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(),
                     ),
-            ),
+                  )
+                : _buildDestinationList(filteredDestinations),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDestinationList(
+      List<Map<String, dynamic>> filteredDestinations) {
+    return filteredDestinations.isEmpty
+        ? Center(
+            child: Text(
+              'No Destination Found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+        : Expanded(
+            child: ListView.builder(
+              itemCount: filteredDestinations.length,
+              itemBuilder: (context, index) {
+                var destination = filteredDestinations[index];
+                String destinationId = destination['id'];
+                Uint8List? destinationImage = destinationImages[destinationId];
+
+                return GestureDetector(
+                  onTap: () async {
+                    if (widget.fromLocationButton) {
+                      // If the Location Button triggered this, navigate to `DestinationDetailPage`
+                      final subDestinationName = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DestinationDetailPage(
+                            destinationId: destination['destinationId'],
+                            subdestinationId: destination['id'],
+                            fromLocationButton: widget.fromLocationButton,
+                          ),
+                        ),
+                      );
+
+                      // Log and pass back the received `subDestinationName` from DestinationDetailPage
+                      devtools.log(
+                          'Received subDestinationName from DestinationDetailPage: $subDestinationName');
+                      if (subDestinationName != null) {
+                        Navigator.pop(context,
+                            subDestinationName); // Pass subDestinationName back to PlanningView
+                      }
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => DestinationDetailPage(
+                            destinationId: destination['destinationId'],
+                            subdestinationId: destination['id'], 
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.grey[200],
+                        image: destinationImage != null
+                            ? DecorationImage(
+                                image: MemoryImage(destinationImage),
+                                fit: BoxFit.cover,
+                                colorFilter: ColorFilter.mode(
+                                  Colors.black.withOpacity(0.4),
+                                  BlendMode.darken,
+                                ),
+                              )
+                            : null,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              destination['name'] ?? 'Unknown Destination',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Text(
+                                  'Rating: ${(destination['rating'] ?? 'N/A').toString()}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const Icon(Icons.star,
+                                    color: Colors.yellow, size: 18),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
   }
 }

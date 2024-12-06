@@ -5,15 +5,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
-import 'package:travelcustom/utilities/navigation_bar.dart';
+import 'package:travelcustom/views/sub_destination.dart';
 import 'dart:developer' as devtools show log;
 
 class DestinationDetailPage extends StatefulWidget {
   final String destinationId;
+  final String? subdestinationId;
   final bool isFavourited;
+  final bool fromLocationButton;
 
   const DestinationDetailPage(
-      {super.key, required this.destinationId, this.isFavourited = false});
+      {super.key,
+      required this.destinationId,
+      required this.subdestinationId,
+      this.isFavourited = false,
+      this.fromLocationButton = false});
 
   @override
   State<DestinationDetailPage> createState() => _DestinationDetailPageState();
@@ -21,37 +27,19 @@ class DestinationDetailPage extends StatefulWidget {
 
 class _DestinationDetailPageState extends State<DestinationDetailPage> {
   final DestinationContent _destinationContent = DestinationContent();
-  bool _isFavourited = false;
+  final ValueNotifier<bool> _isFavoritedNotifier = ValueNotifier<bool>(false);
   bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};
   Uint8List? destinationImageData;
-  String? _authorName;
-  List<Map<String, dynamic>> _reviews = [];
+  final ValueNotifier<int> _reviewCountNotifier = ValueNotifier<int>(0);
+  final GlobalKey<ReviewsWidgetState> _reviewsWidgetKey =
+      GlobalKey<ReviewsWidgetState>();
 
   @override
   void initState() {
     super.initState();
-    _isFavourited = widget.isFavourited;
     _checkIfFavourited();
     _fetchDestinationImage();
-    _fetchDestinationaAuthor();
-    _fetchReviews();
-  }
-
-  Future<void> _fetchDestinationaAuthor() async {
-    try {
-      final destinationDoc =
-          await _destinationContent.getDestinationDetails(widget.destinationId);
-      final data = destinationDoc.data() as Map<String, dynamic>;
-      final authorId = data['author'] as String?;
-
-      if (authorId != null) {
-        _authorName = await _destinationContent.getAuthorName(authorId);
-        setState(() {});
-      }
-    } catch (e) {
-      devtools.log('Error fetching destination or author details: $e');
-    }
   }
 
   void _fetchDestinationImage() async {
@@ -61,43 +49,17 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     setState(() {}); // Trigger a rebuild to display the image
   }
 
-  Future<void> _fetchReviews() async {
-    try {
-      final reviews =
-          await _destinationContent.fetchReviews(widget.destinationId);
-
-      // Loop through each review and fetch the user name based on userId
-      for (var review in reviews) {
-        final userId = review['userId'] as String;
-        final userName = await _destinationContent.getUserName(userId);
-        review['userName'] =
-            userName ?? 'Unknown'; // Add the user name to the review map
-      }
-
-      setState(() {
-        _reviews = reviews; // Update state with reviews that include user names
-      });
-    } catch (e) {
-      devtools.log('Error fetching reviews with user names: $e');
-    }
-  }
-
-  void _checkIfFavourited() async {
-    _isFavourited =
+  Future<void> _checkIfFavourited() async {
+    bool isFavorited =
         await _destinationContent.checkIfFavourited(widget.destinationId);
-    setState(() {});
+    _isFavoritedNotifier.value = isFavorited;
   }
 
   void _toggleFavourite() async {
+    bool newFavoritedState = !_isFavoritedNotifier.value;
     await _destinationContent.toggleFavourite(
-        widget.destinationId, !_isFavourited);
-    setState(() {
-      _isFavourited = !_isFavourited;
-    });
-  }
-
-  Future<DocumentSnapshot> _getDestinationDetails() {
-    return _destinationContent.getDestinationDetails(widget.destinationId);
+        widget.destinationId, newFavoritedState);
+    _isFavoritedNotifier.value = newFavoritedState;
   }
 
   void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
@@ -110,28 +72,107 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     }
   }
 
-  void _addToPlan() async {
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      devtools.log('User is not logged in');
-      return;
-    }
+  Future<DocumentSnapshot> _getDestinationDetails() {
+    return _destinationContent.getDestinationDetails(widget.destinationId);
+  }
 
-    TimeOfDay? selectedTime = await showTimePicker(
+  void _handleAddToPlan(String subDestinationName) {
+    if (widget.fromLocationButton) {
+      // Log the intention to pop and return data to SearchPage
+      devtools.log(
+          'PPP Returning subDestinationName: $subDestinationName to SearchPage');
+      Navigator.pop(context, subDestinationName);
+      Navigator.pop(context, subDestinationName);
+    }
+  }
+
+  void _showReviewDialog() {
+    showDialog(
       context: context,
-      initialTime: TimeOfDay.now(),
-    );
+      builder: (context) {
+        double rating = 0;
+        TextEditingController reviewController = TextEditingController();
 
-    if (selectedTime != null) {
-      String formattedTime = selectedTime.format(context);
-      await _destinationContent.addToPlan(
-          userId, widget.destinationId, formattedTime);
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => CustomBottomNavigationBar()),
-        (Route<dynamic> route) => false,
-      );
-    }
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.grey[200],
+              title: const Center(child: Text('Write a Review')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Rating:',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color:
+                              index < rating ? Colors.amber[600] : Colors.grey,
+                          size: 40.0, // Make the stars bigger
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            rating = index + 1.0;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Review:',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  TextField(
+                    controller: reviewController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await _destinationContent.addReview(
+                      widget.destinationId,
+                      rating,
+                      reviewController.text,
+                    );
+                    Navigator.of(context).pop();
+                    setState(() {}); // Refresh the page to show the new review
+                    _reviewsWidgetKey.currentState?.refreshReviews();
+                  },
+                  child: const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -152,7 +193,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
               child: CircularProgressIndicator(),
             );
           }
-          devtools.log('authorName(page): $_authorName');
 
           if (snapshot.hasError) {
             return const Center(child: Text('Error loading details'));
@@ -206,22 +246,35 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       ),
                       Align(
                         alignment: Alignment.topRight,
-                        child: IconButton(
-                          onPressed: _toggleFavourite,
-                          icon: FaIcon(
-                            FontAwesomeIcons.solidStar,
-                            color: _isFavourited
-                                ? Colors.yellow
-                                : const Color.fromARGB(255, 169, 169, 169)
-                                    .withOpacity(0.7),
-                            size: 36.0,
-                          ),
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isFavoritedNotifier,
+                          builder: (context, isFavourited, child) {
+                            return IconButton(
+                              onPressed: _toggleFavourite,
+                              icon: FaIcon(
+                                FontAwesomeIcons.solidStar,
+                                color: isFavourited
+                                    ? Colors.yellow
+                                    : const Color.fromARGB(255, 169, 169, 169)
+                                        .withOpacity(0.7),
+                                size: 36.0,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                SubDestinationsCard(
+                  destinationId: widget.destinationId,
+                  initialSubDestinationId: widget.subdestinationId,
+                  fromLocationButton: widget.fromLocationButton,
+                  onAddToPlan: _handleAddToPlan,
+                ),
+                const SizedBox(height: 13),
 
                 // Horizontal Scrollable Reviews Section
                 Padding(
@@ -230,83 +283,19 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Rating: ",
+                        "Recent Reviews: ",
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
-                      SizedBox(
-                        height: 120, // Set height for the review cards
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _reviews.length,
-                          itemBuilder: (context, index) {
-                            final review = _reviews[index];
-                            return GestureDetector(
-                              onTap: () {
-                                // Handle tap on review
-                              },
-                              child: Container(
-                                width: 200,
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color.fromARGB(
-                                              255, 121, 121, 121)
-                                          .withOpacity(0.1),
-                                      spreadRadius: 1,
-                                      blurRadius: 3,
-                                      offset: const Offset(0,
-                                          3), // Only shadow for bottom, left, and right
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      review['userName'] ??
-                                          'Anonymous', // Display reviewer ID
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      review['review_content'] ??
-                                          'No review', // Display review text
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Row(
-                                      children: [
-                                        const Text('Rating:'),
-                                        const SizedBox(width: 5),
-                                        Text(review['rating']
-                                            .toString()), // Display rating
-                                        const Icon(
-                                          Icons.star,
-                                          color: Colors.yellow,
-                                          size: 16,
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                      ReviewsWidget(
+                        key: _reviewsWidgetKey,
+                        destinationId: widget.destinationId,
+                        destinationContent: _destinationContent,
+                        onReviewsLoaded: (reviewCount) {
+                          _reviewCountNotifier.value =
+                              reviewCount; // Directly update the ValueNotifier
+                        },
                       ),
                     ],
                   ),
@@ -369,50 +358,14 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text(
-                      _reviews.length.toString(),
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Posted Date:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      destinationData['post_date'] != null
-                          ? (destinationData['post_date'] as Timestamp)
-                              .toDate()
-                              .toLocal()
-                              .toString()
-                              .split(' ')[0]
-                              .split('-')
-                              .reversed
-                              .join('-')
-                          : '-',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Author:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      _authorName ?? 'Unknown',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _reviewCountNotifier,
+                      builder: (context, reviewCount, child) {
+                        return Text(
+                          reviewCount.toString(),
+                          style: const TextStyle(fontSize: 16),
+                        );
+                      },
                     ),
                     const SizedBox(height: 15),
                   ],
@@ -420,15 +373,227 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                 const SizedBox(height: 30),
                 Center(
                   child: ElevatedButton(
-                    onPressed: _addToPlan,
-                    child: const Text('Add to Plan'),
+                    onPressed: _showReviewDialog,
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.grey[800], // Text color
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      elevation: 5,
+                    ),
+                    child: const Text('Write a Review'),
                   ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class FavoriteButton extends StatelessWidget {
+  final ValueNotifier<bool> isFavoritedNotifier;
+  final String destinationId;
+  final DestinationContent destinationContent;
+
+  const FavoriteButton({
+    super.key,
+    required this.isFavoritedNotifier,
+    required this.destinationId,
+    required this.destinationContent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isFavoritedNotifier,
+      builder: (context, isFavorited, _) {
+        return IconButton(
+          onPressed: () async {
+            await destinationContent.toggleFavourite(
+                destinationId, !isFavorited);
+            isFavoritedNotifier.value = !isFavorited;
+          },
+          icon: Icon(
+            isFavorited ? Icons.star : Icons.star_border,
+            color: isFavorited ? Colors.yellow : Colors.grey,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class AuthorNameWidget extends StatelessWidget {
+  final String destinationId;
+  final DestinationContent destinationContent;
+
+  const AuthorNameWidget({
+    super.key,
+    required this.destinationId,
+    required this.destinationContent,
+  });
+
+  Future<String?> _fetchAuthorName() async {
+    try {
+      final destinationDoc =
+          await destinationContent.getDestinationDetails(destinationId);
+      final data = destinationDoc.data() as Map<String, dynamic>;
+      final authorId = data['author'] as String?;
+
+      if (authorId != null) {
+        return await destinationContent.getAuthorName(authorId);
+      }
+    } catch (e) {
+      devtools.log('Error fetching author name: $e');
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _fetchAuthorName(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator(); // Loading indicator
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return Text('Unknown');
+        }
+        return Text(snapshot.data!);
+      },
+    );
+  }
+}
+
+class ReviewsWidget extends StatefulWidget {
+  final String destinationId;
+  final DestinationContent destinationContent;
+  final Function(int) onReviewsLoaded;
+
+  const ReviewsWidget({
+    super.key,
+    required this.destinationId,
+    required this.destinationContent,
+    required this.onReviewsLoaded,
+  });
+
+  @override
+  ReviewsWidgetState createState() => ReviewsWidgetState();
+}
+
+class ReviewsWidgetState extends State<ReviewsWidget> {
+  Future<List<Map<String, dynamic>>> _fetchReviews() async {
+    try {
+      final reviews =
+          await widget.destinationContent.fetchReviews(widget.destinationId);
+      for (var review in reviews) {
+        final userId = review['userId'] as String;
+        final userName = await widget.destinationContent.getUserName(userId);
+        review['userName'] = userName ?? 'Unknown';
+      }
+      widget.onReviewsLoaded(reviews.length);
+      return reviews;
+    } catch (e) {
+      devtools.log('Error fetching reviews: $e');
+      widget.onReviewsLoaded(0);
+      return [];
+    }
+  }
+
+  void refreshReviews() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchReviews(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return Text('No reviews available');
+        }
+
+        final reviews = snapshot.data!;
+        return SizedBox(
+          height: 120, // Set height for the review cards
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return Container(
+                width: 200,
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review['userName'] ?? 'Anonymous',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Text(
+                          review['rating'].toInt().toString(),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                          size: 23,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      review['review_content'] ?? 'No review',
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

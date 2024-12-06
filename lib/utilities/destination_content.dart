@@ -74,7 +74,6 @@ class DestinationContent {
 
       if (authorDoc.exists) {
         String authorName = authorDoc['name'] as String? ?? 'Unknown';
-        devtools.log('Author name(content): $authorName');
         return authorName;
       } else {
         devtools.log('Author not found in users collection');
@@ -100,6 +99,29 @@ class DestinationContent {
         devtools.log('Error fetching image for $destinationId: $e');
         return null;
       }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchSubDestinations(
+      String destinationId) async {
+    try {
+      final subDestinationsSnapshot = await FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(destinationId)
+          .collection('sub_destinations')
+          .orderBy('post_date',
+              descending: true) // Sort by post_date in descending order
+          .get();
+
+      devtools.log('Sub-destinations fetched successfully');
+      return subDestinationsSnapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      devtools.log('Error fetching sub-destinations: $e');
+      return [];
     }
   }
 
@@ -182,6 +204,35 @@ class DestinationContent {
       devtools.log('Activity added to travel plan successfully');
     } else {
       devtools.log('No travel plan found for user');
+    }
+  }
+
+  Future<void> addReview(
+      String destinationId, double rating, String reviewContent) async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      devtools.log('User is not logged in');
+      return;
+    }
+
+    // Trim spaces at the end and remove excess rows
+    reviewContent = reviewContent.trimRight();
+    reviewContent = reviewContent.replaceAll(RegExp(r'\n\s*\n'), '\n');
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('destinations')
+          .doc(destinationId)
+          .collection('reviews')
+          .add({
+        'userId': userId,
+        'rating': rating,
+        'review_content': reviewContent,
+        'review_date': Timestamp.now(),
+      });
+      devtools.log('Review added successfully');
+    } catch (e) {
+      devtools.log('Error adding review: $e');
     }
   }
 }
