@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:travelcustom/views/destination_detail.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'dart:developer' as devtools show log;
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:travelcustom/views/planning.dart';
 
 class TravelView extends StatefulWidget {
   const TravelView({super.key});
@@ -17,11 +19,14 @@ class TravelView extends StatefulWidget {
 class _TravelViewState extends State<TravelView> {
   List<Map<String, dynamic>> recommendedDestinations = [];
   late Future<List<Map<String, dynamic>>> _recommendedDestinationsFuture;
+  late Future<List<Map<String, dynamic>>> _recommendedPlansFuture;
 
   @override
   void initState() {
     super.initState();
     _recommendedDestinationsFuture = fetchAndDisplayRecommendations();
+    _recommendedPlansFuture =
+        fetchRecommendedPlans(FirebaseAuth.instance.currentUser?.uid ?? '');
   }
 
   Future<List<Map<String, dynamic>>> fetchAndDisplayRecommendations() async {
@@ -81,16 +86,16 @@ class _TravelViewState extends State<TravelView> {
 
     return preferredTags; // Return the user's preferred tags
   }
-
-  // Fetch the destinations from Firestore
-  Stream<QuerySnapshot> _getDestinations() {
-    return FirebaseFirestore.instance.collection('destinations').snapshots();
-  }
+  
+  // Stream<QuerySnapshot> _getDestinations() {
+  //   return FirebaseFirestore.instance.collection('destinations').snapshots();
+  // }
 
   Future<void> refreshTravelData() async {
-    _getDestinations();
     setState(() {
       _recommendedDestinationsFuture = fetchAndDisplayRecommendations();
+      _recommendedPlansFuture =
+          fetchRecommendedPlans(FirebaseAuth.instance.currentUser?.uid ?? '');
     });
   }
 
@@ -266,6 +271,35 @@ class _TravelViewState extends State<TravelView> {
                   );
                 },
               ),
+              const SizedBox(height: 30),
+              Text(
+                'Recommended Plans',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _recommendedPlansFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    return const Center(
+                        child: Text('No recommended plans available'));
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      var planData = snapshot.data![index];
+                      return _buildPlanCard(planData);
+                    },
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -396,6 +430,86 @@ class _TravelViewState extends State<TravelView> {
       ),
     );
   }
+
+  Widget _buildPlanCard(Map<String, dynamic> planData) {
+    List<dynamic> days = planData['days'];
+    String timeAgo =
+        timeago.format((planData['postDate'] as Timestamp).toDate());
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Card(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+        elevation: 4.0,
+        child: InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PlanningView(
+                  planId: planData['planId'],
+                  collectionName: 'platform_plans',
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      planData['planName'],
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 18.0),
+                    ),
+                    Spacer(),
+                    Text(
+                      timeAgo,
+                      style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  'By ${planData['authorName']}',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 12.0),
+                ...days.take(2).map((day) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          day['dayTitle'] ?? 'No Title',
+                          style: TextStyle(
+                              fontSize: 16.0, fontWeight: FontWeight.w500),
+                        ),
+                        if ((day['sideNotes'] as List).isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+                            child: Text(
+                              day['sideNotes'][0],
+                              style: TextStyle(
+                                  fontSize: 14.0, color: Colors.grey[700]),
+                            ),
+                          ),
+                        const SizedBox(height: 8.0),
+                      ],
+                    )),
+                if (days.length > 2)
+                  Text(
+                    "...",
+                    style: TextStyle(fontSize: 16.0, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // Function to fetch recommended destinations based on user interactions
@@ -445,4 +559,102 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
   }
 
   return recommendedDestinations;
+}
+
+// Function to fetch recommended plans based on user interactions
+Future<List<Map<String, dynamic>>> fetchRecommendedPlans(String userId) async {
+  devtools.log('Starting fetchRecommendedPlans for userId: $userId');
+
+  if (userId.isEmpty) {
+    devtools.log('Error: userId is empty');
+    return [];
+  }
+
+  try {
+    // Get user's highest scoring interaction
+    QuerySnapshot interactionSnapshot = await FirebaseFirestore.instance
+        .collection('interaction')
+        .where('user_id', isEqualTo: userId)
+        .orderBy('preference_score', descending: true)
+        .limit(1)
+        .get();
+
+    if (interactionSnapshot.docs.isEmpty) {
+      devtools.log('No interactions found for user');
+      return [];
+    }
+
+    var interactionData =
+        interactionSnapshot.docs.first.data() as Map<String, dynamic>;
+    devtools.log(
+        'Found interaction with score: ${interactionData['preference_score']}');
+
+    List<String> highestScoreTags =
+        List<String>.from(interactionData['tags'] ?? []);
+    devtools.log('Extracted tags: $highestScoreTags');
+
+    if (highestScoreTags.isEmpty) {
+      devtools.log('No tags found in interaction');
+      return [];
+    }
+
+    // Query platform_plans
+    QuerySnapshot planSnapshot = await FirebaseFirestore.instance
+        .collection('platform_plans')
+        .where('tags', arrayContainsAny: highestScoreTags)
+        .orderBy('post_date', descending: true)
+        .limit(5)
+        .get();
+
+    devtools.log('Found ${planSnapshot.docs.length} matching plans');
+
+    List<Map<String, dynamic>> recommendedPlans = [];
+
+    for (var doc in planSnapshot.docs) {
+      var planData = doc.data() as Map<String, dynamic>;
+      devtools.log('Processing plan: ${planData['plan_name']}');
+
+      try {
+        var authorDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(planData['userId'])
+            .get();
+
+        if (!authorDoc.exists) {
+          devtools.log(
+              'Author document not found for userId: ${planData['userId']}');
+          continue;
+        }
+
+        List<Map<String, dynamic>> daysData = [];
+        if (planData['days'] != null) {
+          List<dynamic> days = List<dynamic>.from(planData['days']);
+          for (var day in days) {
+            daysData.add({
+              'dayTitle': day['day_title'] ?? 'No Title',
+              'sideNotes': List<String>.from(day['side_note'] ?? []),
+            });
+          }
+        }
+
+        recommendedPlans.add({
+          'planId': doc.id,
+          'planName': planData['plan_name'],
+          'authorName': (authorDoc.data() as Map<String, dynamic>)['name'],
+          'days': daysData,
+          'postDate': planData['post_date'],
+        });
+
+        devtools.log('Successfully added plan: ${planData['plan_name']}');
+      } catch (e) {
+        devtools.log('Error processing plan ${planData['plan_name']}: $e');
+      }
+    }
+
+    devtools.log('Returning ${recommendedPlans.length} recommended plans');
+    return recommendedPlans;
+  } catch (e) {
+    devtools.log('Error in fetchRecommendedPlans: $e');
+    return [];
+  }
 }

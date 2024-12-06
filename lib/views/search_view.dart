@@ -11,7 +11,10 @@ import 'dart:developer' as devtools show log;
 class SearchPage extends StatefulWidget {
   final bool fromLocationButton;
   final List<String> initialTags; // Add initialTags parameter
-  const SearchPage({super.key, this.fromLocationButton = false, this.initialTags = const []});
+  const SearchPage(
+      {super.key,
+      this.fromLocationButton = false,
+      this.initialTags = const []});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -42,6 +45,9 @@ class _SearchPageState extends State<SearchPage> {
     'Family-friendly'
   ];
 
+  RangeValues _selectedBudgetRange = const RangeValues(0, 1000); // Add this
+  bool _isBudgetFilterActive = false; // Add this
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +75,7 @@ class _SearchPageState extends State<SearchPage> {
         'name': doc['name'],
         'destinationId': doc.reference.parent.parent?.id, // main collection id
         'tags': List<String>.from(doc['tags'] ?? []), // Fetch tags
+        'estimate_cost': doc['estimate_cost'] ?? 0, // Add this line
       };
     }).toList();
 
@@ -120,7 +127,7 @@ class _SearchPageState extends State<SearchPage> {
 
     devtools.log('Selected Tags: $selectedTags');
 
-    if (searchQuery.isEmpty && selectedTags.isEmpty) {
+    if (searchQuery.isEmpty && selectedTags.isEmpty && !_isBudgetFilterActive) {
       filteredList = List.from(localDestination);
     } else {
       String normalizedQuery = _normalizeQuery(searchQuery);
@@ -130,9 +137,12 @@ class _SearchPageState extends State<SearchPage> {
         bool matchesTags = selectedTags.isEmpty ||
             selectedTags
                 .any((tag) => destination['tags']?.contains(tag) ?? false);
+        bool matchesBudget = !_isBudgetFilterActive ||
+            (destination['estimate_cost'] >= _selectedBudgetRange.start &&
+                destination['estimate_cost'] <= _selectedBudgetRange.end);
         devtools.log(
             'Destination: ${destination['name']}, Tags: ${destination['tags']}, Matches: $matchesTags');
-        return matchesQuery && matchesTags;
+        return matchesQuery && matchesTags && matchesBudget;
       }).toList();
     }
 
@@ -207,6 +217,66 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
+  void _showBudgetRangeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        RangeValues tempBudgetRange = _selectedBudgetRange;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Select Budget Range'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RangeSlider(
+                    values: tempBudgetRange,
+                    min: 0,
+                    max: 1000,
+                    divisions: 20,
+                    labels: RangeLabels('\$${tempBudgetRange.start.round()}',
+                        '\$${tempBudgetRange.end.round()}'),
+                    onChanged: (RangeValues values) {
+                      setState(() {
+                        tempBudgetRange = values;
+                      });
+                    },
+                  ),
+                  Text(
+                    'Budget: \$${tempBudgetRange.start.round()} - \$${tempBudgetRange.end.round()}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Clear'),
+                  onPressed: () {
+                    this.setState(() {
+                      _selectedBudgetRange = const RangeValues(0, 1000);
+                      _isBudgetFilterActive = false;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Apply'),
+                  onPressed: () {
+                    this.setState(() {
+                      _selectedBudgetRange = tempBudgetRange;
+                      _isBudgetFilterActive = true;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _applyFilters() {
     setState(() {
       final filteredDestinations = _filteredDestinations();
@@ -249,6 +319,8 @@ class _SearchPageState extends State<SearchPage> {
                   onSelected: (value) {
                     if (value == 'Tags') {
                       _showTagSelectionDialog();
+                    } else if (value == 'Budget') {
+                      _showBudgetRangeDialog();
                     }
                   },
                   itemBuilder: (BuildContext context) =>
@@ -256,6 +328,10 @@ class _SearchPageState extends State<SearchPage> {
                     const PopupMenuItem<String>(
                       value: 'Tags',
                       child: Text('Filter by Tags'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'Budget',
+                      child: Text('Filter by Budget'),
                     ),
                     // Add other filter options here if needed
                   ],
@@ -352,6 +428,11 @@ class _SearchPageState extends State<SearchPage> {
                       style: const TextStyle(
                         fontSize: 14,
                       ),
+                    ),
+                  if (_isBudgetFilterActive)
+                    Text(
+                      'Budget: \$${_selectedBudgetRange.start.round()} - \$${_selectedBudgetRange.end.round()}',
+                      style: const TextStyle(fontSize: 14),
                     ),
                 ],
               ),
