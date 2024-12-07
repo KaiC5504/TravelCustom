@@ -36,13 +36,10 @@ class _PlatformPageState extends State<PlatformPage> {
     _fetchDestinationPosts();
   }
 
-  // Fetch destination and user data
   Future<void> _fetchDestinationPosts() async {
     try {
-      // Fetch data from DestinationService
       final data = await _platformPostsContent.fetchDestinationPosts();
 
-      // Update the state with combined data
       setState(() {
         destinationPosts = data['combinedPosts'];
         destinationProfilePictures = data['profilePictures'];

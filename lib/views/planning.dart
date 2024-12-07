@@ -52,7 +52,7 @@ class _PlanningViewState extends State<PlanningView> {
     if (widget.newDay ||
         (widget.addToSideNote && widget.subDestinationName != null)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _addDay(); // Open _addDay dialog after build
+        _addDay();
       });
     }
   }
@@ -131,7 +131,6 @@ class _PlanningViewState extends State<PlanningView> {
     List<String> newSideNotes = [];
 
     if (initialSideNote != null) {
-      devtools.log('PPP Initial side note: $initialSideNote');
       newSideNotes.add(initialSideNote);
     }
 
@@ -147,7 +146,6 @@ class _PlanningViewState extends State<PlanningView> {
             builder: (context, setState) {
               double screenHeight = MediaQuery.of(context).size.height;
               double screenWidth = MediaQuery.of(context).size.width;
-
               return ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: screenHeight * 0.8,
@@ -188,31 +186,54 @@ class _PlanningViewState extends State<PlanningView> {
 
                         // Scrollable container for side notes
                         SizedBox(
-                          height:
-                              150, // Set a fixed height for the scrollable area
+                          height: 150,
                           child: SingleChildScrollView(
                             controller: _scrollController,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: newSideNotes
-                                  .map((note) => Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 4.0),
-                                        child: Container(
-                                          padding: EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            border:
-                                                Border.all(color: Colors.grey),
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                          child: Text(note),
+                              children:
+                                  newSideNotes.asMap().entries.map((entry) {
+                                int idx = entry.key;
+                                String note = entry.value;
+                                return Container(
+                                  margin: EdgeInsets.symmetric(vertical: 2),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          note,
+                                          style: TextStyle(fontSize: 14),
                                         ),
-                                      ))
-                                  .toList(),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            newSideNotes.removeAt(idx);
+                                          });
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                             ),
                           ),
                         ),
+
                         SizedBox(height: 20),
 
                         Row(
@@ -546,6 +567,238 @@ class _PlanningViewState extends State<PlanningView> {
     );
   }
 
+  Future<void> _editDay(int dayIndex, Map<String, dynamic> dayData) async {
+    TextEditingController dayTitleController =
+        TextEditingController(text: dayData['day_title']);
+    List<String> editedSideNotes =
+        List<String>.from(dayData['side_note'] ?? []);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          backgroundColor: Colors.grey[200],
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              double screenHeight = MediaQuery.of(context).size.height;
+              double screenWidth = MediaQuery.of(context).size.width;
+
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: screenHeight * 0.8,
+                  maxWidth: screenWidth * 0.9,
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Text(
+                            'Day ${dayIndex + 1}',
+                            style: TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 25),
+                        TextField(
+                          controller: dayTitleController,
+                          decoration: InputDecoration(
+                            labelText: 'Enter Day Title',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 30),
+                        Text('Add Locations or Side Notes'),
+                        SizedBox(height: 10),
+                        // Scrollable container for side notes
+                        SizedBox(
+                          height: 150,
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children:
+                                  editedSideNotes.asMap().entries.map((entry) {
+                                int idx = entry.key;
+                                String note = entry.value;
+                                return Container(
+                                  margin: EdgeInsets.symmetric(vertical: 2),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          note,
+                                          style: TextStyle(fontSize: 14),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            editedSideNotes.removeAt(idx);
+                                          });
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                final location = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SearchPage(
+                                      fromLocationButton: true,
+                                    ),
+                                  ),
+                                );
+                                if (location != null) {
+                                  setState(() {
+                                    editedSideNotes.add(location);
+                                  });
+                                }
+                              },
+                              child: Text('Location'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                _addSideNote(
+                                    context, setState, editedSideNotes);
+                              },
+                              child: Text('Side Note'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                String dayTitle =
+                                    dayTitleController.text.trim();
+                                if (dayTitle.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Please enter a title for the day.')),
+                                  );
+                                  return;
+                                }
+                                await _updateDayInFirestore(
+                                    dayIndex, dayTitle, editedSideNotes);
+                                Navigator.of(context).pop();
+                                await fetchTravelPlanDetails();
+                              },
+                              child: Text('Save'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _updateDayInFirestore(
+      int dayIndex, String dayTitle, List<String> sideNotes) async {
+    final planId = await _getUserPlanId();
+    if (planId.isEmpty) return;
+
+    final planDocRef =
+        FirebaseFirestore.instance.collection('travel_plans').doc(planId);
+
+    List<Map<String, dynamic>> updatedDays = List.from(activities);
+    updatedDays[dayIndex] = {
+      'day_title': dayTitle,
+      'side_note': sideNotes,
+    };
+
+    await planDocRef.update({
+      'days': updatedDays,
+    });
+  }
+
+  Future<void> _deleteDay(int dayIndex) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Day'),
+        content: Text('Are you sure you want to delete this day?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final planId = await _getUserPlanId();
+      if (planId.isEmpty) return;
+
+      final planDocRef =
+          FirebaseFirestore.instance.collection('travel_plans').doc(planId);
+
+      List<Map<String, dynamic>> updatedDays = List.from(activities);
+      updatedDays.removeAt(dayIndex);
+
+      await planDocRef.update({
+        'days': updatedDays,
+      });
+
+      await fetchTravelPlanDetails();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -617,6 +870,7 @@ class _PlanningViewState extends State<PlanningView> {
                                   'Day ${index + 1}',
                                   dayTitle,
                                   sideNotes,
+                                  index,
                                 ),
                               );
                             },
@@ -673,7 +927,8 @@ class _PlanningViewState extends State<PlanningView> {
                       }
                     },
                     backgroundColor: const Color.fromARGB(255, 135, 139, 227),
-                    child: FaIcon(FontAwesomeIcons.robot, color: Colors.white),
+                    child:
+                        FaIcon(FontAwesomeIcons.wandMagic, color: Colors.white),
                   ),
                 ],
               ),
@@ -714,67 +969,98 @@ class _PlanningViewState extends State<PlanningView> {
 
     return userInput;
   }
-}
 
-Widget _buildPlanDays(String day, String title, List<String> sideNotes) {
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Day label on the left
-      Expanded(
-        flex: 2,
-        child: Center(
-          child: Text(
-            day,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-
-      // Icon in the center
-      Icon(
-        Icons.location_on,
-        color: const Color.fromARGB(255, 135, 139, 227),
-        size: 30,
-      ),
-
-      // Activities on the right
-      Expanded(
-        flex: 5,
-        child: Container(
-          margin: EdgeInsets.only(left: 16),
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
+  Widget _buildPlanDays(
+      String day, String title, List<String> sideNotes, int index) {
+    return GestureDetector(
+      onLongPress: widget.collectionName == 'travel_plans'
+          ? () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Manage Day ${index + 1}'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.edit),
+                        title: Text('Edit'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _editDay(index,
+                              activities[index]); // Pass the full day data
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.delete, color: Colors.red),
+                        title:
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _deleteDay(index);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Text(
+                day,
                 style: TextStyle(
-                  fontSize: 25,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
-              ...sideNotes.map((activity) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      activity,
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  )),
-            ],
+            ),
           ),
-        ),
+          Icon(
+            Icons.location_on,
+            color: const Color.fromARGB(255, 135, 139, 227),
+            size: 30,
+          ),
+          Expanded(
+            flex: 5,
+            child: Container(
+              margin: EdgeInsets.only(left: 16),
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  ...sideNotes.map((activity) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Text(
+                          activity,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      )),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-    ],
-  );
+    );
+  }
 }
 
 class PlanReviewsWidget extends StatefulWidget {

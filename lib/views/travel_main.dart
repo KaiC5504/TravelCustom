@@ -39,7 +39,7 @@ class _TravelViewState extends State<TravelView> {
 
     // Step 2: Fetch the preferred tags from the interaction collection
     List<String> preferredTags =
-        await fetchUserPreferredTagsFromInteractions(userId);
+        await fetchPreferredTags(userId);
 
     if (preferredTags.isEmpty) {
       // If no preferred tags are found, return empty list and print a message
@@ -56,40 +56,34 @@ class _TravelViewState extends State<TravelView> {
 
     return fetchedRecommendations;
   }
-
-  // Function to fetch user preferred tags from the interaction collection
-  Future<List<String>> fetchUserPreferredTagsFromInteractions(
+ 
+  Future<List<String>> fetchPreferredTags(
       String userId) async {
     List<String> preferredTags = [];
 
-    // Query the 'interaction' collection where the 'user_id' matches the current user
     QuerySnapshot interactionSnapshot = await FirebaseFirestore.instance
         .collection('interaction')
         .where('user_id', isEqualTo: userId)
         .get();
 
-    // Loop through the documents in the query result
+    // Loop document
     for (var doc in interactionSnapshot.docs) {
       var interactionData = doc.data() as Map<String, dynamic>;
 
-      // Extract the tags from the interaction data
+      // Fetch tags
       List<String> interactionTags =
           List<String>.from(interactionData['tags'] ?? []);
 
-      // Add the tags to the preferredTags list, avoiding duplicates
+      // Add tags to list
       for (String tag in interactionTags) {
         if (!preferredTags.contains(tag)) {
-          preferredTags.add(tag); // Only add unique tags
+          preferredTags.add(tag); 
         }
       }
     }
 
-    return preferredTags; // Return the user's preferred tags
+    return preferredTags; 
   }
-
-  // Stream<QuerySnapshot> _getDestinations() {
-  //   return FirebaseFirestore.instance.collection('destinations').snapshots();
-  // }
 
   Future<void> refreshTravelData() async {
     setState(() {
@@ -514,12 +508,10 @@ class _TravelViewState extends State<TravelView> {
   }
 }
 
-// Function to fetch recommended destinations based on user interactions
 Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
     String userId) async {
   List<Map<String, dynamic>> recommendedDestinations = [];
 
-  // Step 1: Query the interaction collection for the user, ordered by preference_score
   QuerySnapshot interactionSnapshot = await FirebaseFirestore.instance
       .collection('interaction')
       .where('user_id', isEqualTo: userId)
@@ -532,12 +524,11 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
     return [];
   }
 
-  // Step 2: Get the highest preference_score document
-  var highestPreferenceInteraction = interactionSnapshot.docs.first;
+  // Get highest preference interaction
+  var highestPreference = interactionSnapshot.docs.first;
   var interactionData =
-      highestPreferenceInteraction.data() as Map<String, dynamic>;
+      highestPreference.data() as Map<String, dynamic>;
 
-  // Extract the tags from the document
   List<String> highestScoreTags =
       List<String>.from(interactionData['tags'] ?? []);
 
@@ -546,13 +537,13 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
     return [];
   }
 
-  // Step 3: Search the sub_destinations sub-collection where the tags match the interaction tags
+  // Match tags with destinations
   QuerySnapshot destinationSnapshot = await FirebaseFirestore.instance
       .collectionGroup('sub_destinations')
       .where('tags', arrayContainsAny: highestScoreTags)
       .get();
 
-  // Step 4: Add matching sub-destinations to the recommendation list
+  // Add destinations to list
   for (var doc in destinationSnapshot.docs) {
     var destinationData = doc.data() as Map<String, dynamic>;
     destinationData['id'] = doc.id;
@@ -563,17 +554,13 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
   return recommendedDestinations;
 }
 
-// Function to fetch recommended plans based on user interactions
 Future<List<Map<String, dynamic>>> fetchRecommendedPlans(String userId) async {
-  devtools.log('Starting fetchRecommendedPlans for userId: $userId');
-
   if (userId.isEmpty) {
-    devtools.log('Error: userId is empty');
     return [];
   }
 
   try {
-    // Get user's highest scoring interaction
+    // Highest preference interaction
     QuerySnapshot interactionSnapshot = await FirebaseFirestore.instance
         .collection('interaction')
         .where('user_id', isEqualTo: userId)
@@ -582,25 +569,19 @@ Future<List<Map<String, dynamic>>> fetchRecommendedPlans(String userId) async {
         .get();
 
     if (interactionSnapshot.docs.isEmpty) {
-      devtools.log('No interactions found for user');
       return [];
     }
 
     var interactionData =
         interactionSnapshot.docs.first.data() as Map<String, dynamic>;
-    devtools.log(
-        'Found interaction with score: ${interactionData['preference_score']}');
 
     List<String> highestScoreTags =
         List<String>.from(interactionData['tags'] ?? []);
-    devtools.log('Extracted tags: $highestScoreTags');
 
     if (highestScoreTags.isEmpty) {
-      devtools.log('No tags found in interaction');
       return [];
     }
 
-    // Query platform_plans
     QuerySnapshot planSnapshot = await FirebaseFirestore.instance
         .collection('platform_plans')
         .where('tags', arrayContainsAny: highestScoreTags)
@@ -608,13 +589,10 @@ Future<List<Map<String, dynamic>>> fetchRecommendedPlans(String userId) async {
         .limit(5)
         .get();
 
-    devtools.log('Found ${planSnapshot.docs.length} matching plans');
-
     List<Map<String, dynamic>> recommendedPlans = [];
 
     for (var doc in planSnapshot.docs) {
       var planData = doc.data() as Map<String, dynamic>;
-      devtools.log('Processing plan: ${planData['plan_name']}');
 
       try {
         var authorDoc = await FirebaseFirestore.instance
@@ -623,8 +601,6 @@ Future<List<Map<String, dynamic>>> fetchRecommendedPlans(String userId) async {
             .get();
 
         if (!authorDoc.exists) {
-          devtools.log(
-              'Author document not found for userId: ${planData['userId']}');
           continue;
         }
 
@@ -646,14 +622,10 @@ Future<List<Map<String, dynamic>>> fetchRecommendedPlans(String userId) async {
           'days': daysData,
           'postDate': planData['post_date'],
         });
-
-        devtools.log('Successfully added plan: ${planData['plan_name']}');
       } catch (e) {
         devtools.log('Error processing plan ${planData['plan_name']}: $e');
       }
     }
-
-    devtools.log('Returning ${recommendedPlans.length} recommended plans');
     return recommendedPlans;
   } catch (e) {
     devtools.log('Error in fetchRecommendedPlans: $e');

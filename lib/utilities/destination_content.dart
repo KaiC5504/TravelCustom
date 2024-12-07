@@ -22,7 +22,8 @@ class DestinationContent {
     return false;
   }
 
-  Future<void> toggleFavourite(String subDestinationId, bool isFavourited) async {
+  Future<void> toggleFavourite(
+      String subDestinationId, bool isFavourited) async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       devtools.log('User is not logged in');
@@ -125,7 +126,8 @@ class DestinationContent {
     }
   }
 
-  Future<Map<String, dynamic>> getSubDestinationDetails(String destinationId, String subDestinationName) async {
+  Future<Map<String, dynamic>> getSubDestinationDetails(
+      String destinationId, String subDestinationName) async {
     try {
       final subDestinationSnapshot = await FirebaseFirestore.instance
           .collection('destinations')
@@ -186,16 +188,17 @@ class DestinationContent {
     }
   }
 
-  Future<void> trackUserViewInteraction(String userId, String subDestinationId, Map<String, dynamic> subDestinationData) async {
+  Future<void> trackUserViewInteraction(String userId, String subDestinationId,
+      Map<String, dynamic> subDestinationData) async {
     if (userId.isNotEmpty) {
-      if (subDestinationData['tags'] != null && subDestinationData['tags'] is List) {
-        List<String> subDestinationTypes = List<String>.from(subDestinationData['tags']);
+      if (subDestinationData['tags'] != null &&
+          subDestinationData['tags'] is List) {
+        List<String> subDestinationTypes =
+            List<String>.from(subDestinationData['tags']);
 
         // Call trackUserInteraction from content_filter.dart
-        await trackUserInteraction(userId, subDestinationId, subDestinationTypes, 'view');
-
-        // Call showUserPreferences from content_filter.dart to display updated preferences
-        showUserPreferences(userId);
+        await trackUserInteraction(
+            userId, subDestinationId, subDestinationTypes, 'view');
       } else {
         devtools.log('tags is missing or not a valid list.');
       }
@@ -253,37 +256,39 @@ class DestinationContent {
       devtools.log('Error adding review: $e');
     }
   }
-  
-  Future<void> incrementClickCount(String destinationId, String subDestinationId) async {
+
+  Future<void> incrementClickCount(
+      String destinationId, String subDestinationId) async {
     try {
-      devtools.log('Attempting to increment click count for subDestinationId: $subDestinationId');
-      
+      devtools.log(
+          'Attempting to increment click count for subDestinationId: $subDestinationId');
+
       final subDestinationRef = FirebaseFirestore.instance
           .collection('destinations')
           .doc(destinationId)
           .collection('sub_destinations')
           .doc(subDestinationId);
-      
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final snapshot = await transaction.get(subDestinationRef);
-        
+
         if (snapshot.exists) {
           final currentClicks = snapshot.data()?['click_count'] ?? 0;
           devtools.log('Current click count: $currentClicks');
-          
-          transaction.update(subDestinationRef, {
-            'click_count': currentClicks + 1
-          });
-          
-          devtools.log('Incrementing click count from $currentClicks to ${currentClicks + 1}');
+
+          transaction
+              .update(subDestinationRef, {'click_count': currentClicks + 1});
+
+          devtools.log(
+              'Incrementing click count from $currentClicks to ${currentClicks + 1}');
         } else {
-          devtools.log('Document does not exist, creating with initial click count');
-          transaction.set(subDestinationRef, {
-            'click_count': 1
-          }, SetOptions(merge: true));
+          devtools.log(
+              'Document does not exist, creating with initial click count');
+          transaction.set(
+              subDestinationRef, {'click_count': 1}, SetOptions(merge: true));
         }
       });
-      
+
       devtools.log('Click count transaction completed');
     } catch (e) {
       devtools.log('Error updating click count: $e');
