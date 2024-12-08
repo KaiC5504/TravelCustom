@@ -34,7 +34,7 @@ class PlatformPostsContent {
     return file;
   }
 
-  // Fetch destinations and user data
+
   Future<Map<String, dynamic>> fetchDestinationPosts() async {
     List<Map<String, dynamic>> destinationPosts = [];
 

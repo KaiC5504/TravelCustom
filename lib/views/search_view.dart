@@ -10,7 +10,11 @@ import 'dart:developer' as devtools show log;
 
 class SearchPage extends StatefulWidget {
   final bool fromLocationButton;
-  const SearchPage({super.key, this.fromLocationButton = false});
+  final List<String> initialTags; // Add initialTags parameter
+  const SearchPage(
+      {super.key,
+      this.fromLocationButton = false,
+      this.initialTags = const []});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -27,9 +31,27 @@ class _SearchPageState extends State<SearchPage> {
   Map<String, Uint8List?> destinationImages = {};
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  List<String> selectedTags = [];
+  List<String> availableTags = [
+    'Urban',
+    'Nightlife',
+    'History',
+    'Art',
+    'Adventure',
+    'Beach',
+    'Nature',
+    'Agriculture',
+    'Island',
+    'Family-friendly'
+  ];
+
+  RangeValues _selectedBudgetRange = const RangeValues(0, 1000); // Add this
+  bool _isBudgetFilterActive = false; // Add this
+
   @override
   void initState() {
     super.initState();
+    selectedTags = widget.initialTags; // Set initial tags
     _fetchDestinations();
   }
 
@@ -41,43 +63,94 @@ class _SearchPageState extends State<SearchPage> {
 
   // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
+    devtools.log('Starting to fetch destinations');
     setState(() {
       _isLoading = true;
     });
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collectionGroup('sub_destinations')
-        .get();
-    List<Map<String, dynamic>> fetchedDestinations = snapshot.docs.map((doc) {
-      return {
-        'id': doc.id, // subdestinationId
-        'name': doc['name'],
-        'destinationId': doc.reference.parent.parent?.id, // main collection id
-      };
-    }).toList();
 
-    // Fetch images from Firebase Storage
-    for (var destination in fetchedDestinations) {
-      String destinationId = destination['id'];
-      try {
-        final ref =
-            _storage.ref().child('destination_images/$destinationId.webp');
-        Uint8List? destinationImageBytes = await ref.getData(100000000);
-        destinationImages[destinationId] = destinationImageBytes;
-      } catch (e) {
-        if (e is FirebaseException && e.code == 'object-not-found') {
-          devtools.log(
-              'No destination image found for $destinationId, using default image.');
-        } else {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collectionGroup('sub_destinations')
+          .get();
+
+      devtools.log('Retrieved ${snapshot.docs.length} documents');
+      
+      // Use a Map to track unique documents by ID
+      Map<String, Map<String, dynamic>> uniqueDestinations = {};
+
+      for (var doc in snapshot.docs) {
+        String docId = doc.id;
+        if (!uniqueDestinations.containsKey(docId)) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          
+          // Handle numeric fields carefully
+          num estimateCost = 0;
+          if (data['estimate_cost'] != null) {
+            if (data['estimate_cost'] is String) {
+              estimateCost = num.tryParse(data['estimate_cost']) ?? 0;
+            } else if (data['estimate_cost'] is num) {
+              estimateCost = data['estimate_cost'];
+            }
+          }
+
+          num rating = 0.0;
+          if (data['rating'] != null) {
+            if (data['rating'] is String) {
+              rating = num.tryParse(data['rating']) ?? 0.0;
+            } else if (data['rating'] is num) {
+              rating = data['rating'];
+            }
+          }
+
+          num clickCount = 0;
+          if (data['click_count'] != null) {
+            if (data['click_count'] is String) {
+              clickCount = num.tryParse(data['click_count']) ?? 0;
+            } else if (data['click_count'] is num) {
+              clickCount = data['click_count'];
+            }
+          }
+
+          uniqueDestinations[docId] = {
+            'id': docId,
+            'name': data['name'] ?? '',
+            'destinationId': doc.reference.parent.parent?.id,
+            'tags': List<String>.from(data['tags'] ?? []),
+            'estimate_cost': estimateCost,
+            'click_count': clickCount,
+            'rating': rating,
+          };
+        }
+      }
+
+      List<Map<String, dynamic>> fetchedDestinations = uniqueDestinations.values.toList();
+
+      // Keep existing image fetching logic
+      for (var destination in fetchedDestinations) {
+        String destinationId = destination['id'];
+        try {
+          final ref = _storage.ref().child('destination_images/$destinationId.webp');
+          Uint8List? destinationImageBytes = await ref.getData(100000000);
+          destinationImages[destinationId] = destinationImageBytes;
+        } catch (e) {
           devtools.log('Error fetching image for $destinationId: $e');
         }
       }
-    }
 
-    if (mounted) {
-      setState(() {
-        localDestination = fetchedDestinations;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          localDestination = fetchedDestinations;
+          _isLoading = false;
+          devtools.log('Successfully loaded ${localDestination.length} destinations');
+        });
+      }
+    } catch (e) {
+      devtools.log('Error in _fetchDestinations: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -97,16 +170,28 @@ class _SearchPageState extends State<SearchPage> {
     return input.trim().toLowerCase();
   }
 
-  // Filter local list based on search query
+  // Filter local list based on search query and selected tags
   List<Map<String, dynamic>> _filteredDestinations() {
     List<Map<String, dynamic>> filteredList = [];
 
-    if (searchQuery.isEmpty) {
+    devtools.log('Selected Tags: $selectedTags');
+
+    if (searchQuery.isEmpty && selectedTags.isEmpty && !_isBudgetFilterActive) {
       filteredList = List.from(localDestination);
     } else {
       String normalizedQuery = _normalizeQuery(searchQuery);
       filteredList = localDestination.where((destination) {
-        return _normalizeQuery(destination['name']).startsWith(normalizedQuery);
+        bool matchesQuery =
+            _normalizeQuery(destination['name']).startsWith(normalizedQuery);
+        bool matchesTags = selectedTags.isEmpty ||
+            selectedTags
+                .any((tag) => destination['tags']?.contains(tag) ?? false);
+        bool matchesBudget = !_isBudgetFilterActive ||
+            (destination['estimate_cost'] >= _selectedBudgetRange.start &&
+                destination['estimate_cost'] <= _selectedBudgetRange.end);
+        devtools.log(
+            'Destination: ${destination['name']}, Tags: ${destination['tags']}, Matches: $matchesTags');
+        return matchesQuery && matchesTags && matchesBudget;
       }).toList();
     }
 
@@ -121,7 +206,132 @@ class _SearchPageState extends State<SearchPage> {
           (a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
     }
 
+    devtools
+        .log('Filtered List: ${filteredList.map((d) => d['name']).toList()}');
+
     return filteredList;
+  }
+
+  void _showTagSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        List<String> tempSelectedTags = List.from(selectedTags);
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Select Tags'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: availableTags.map((String tag) {
+                    return CheckboxListTile(
+                      value: tempSelectedTags.contains(tag),
+                      title: Text(tag),
+                      onChanged: (bool? checked) {
+                        setState(() {
+                          if (checked == true) {
+                            tempSelectedTags.add(tag);
+                          } else {
+                            tempSelectedTags.remove(tag);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Apply'),
+                  onPressed: () {
+                    setState(() {
+                      selectedTags = List.from(tempSelectedTags);
+                      devtools.log('Applied Tags: $selectedTags');
+                    });
+                    Navigator.of(context).pop();
+                    _applyFilters(); // Ensure the filter is applied
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showBudgetRangeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        RangeValues tempBudgetRange = _selectedBudgetRange;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Select Budget Range'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RangeSlider(
+                    values: tempBudgetRange,
+                    min: 0,
+                    max: 1000,
+                    divisions: 20,
+                    labels: RangeLabels('\$${tempBudgetRange.start.round()}',
+                        '\$${tempBudgetRange.end.round()}'),
+                    onChanged: (RangeValues values) {
+                      setState(() {
+                        tempBudgetRange = values;
+                      });
+                    },
+                  ),
+                  Text(
+                    'Budget: \$${tempBudgetRange.start.round()} - \$${tempBudgetRange.end.round()}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Clear'),
+                  onPressed: () {
+                    this.setState(() {
+                      _selectedBudgetRange = const RangeValues(0, 1000);
+                      _isBudgetFilterActive = false;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Apply'),
+                  onPressed: () {
+                    this.setState(() {
+                      _selectedBudgetRange = tempBudgetRange;
+                      _isBudgetFilterActive = true;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _applyFilters() {
+    setState(() {
+      final filteredDestinations = _filteredDestinations();
+      devtools.log(
+          'Filtered List: ${filteredDestinations.map((d) => d['name']).toList()}');
+    });
   }
 
   @override
@@ -155,21 +365,24 @@ class _SearchPageState extends State<SearchPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 PopupMenuButton<String>(
-                  onSelected: (value) {},
+                  onSelected: (value) {
+                    if (value == 'Tags') {
+                      _showTagSelectionDialog();
+                    } else if (value == 'Budget') {
+                      _showBudgetRangeDialog();
+                    }
+                  },
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<String>>[
                     const PopupMenuItem<String>(
-                      value: 'Price',
-                      child: Text('Filter by Price'),
+                      value: 'Tags',
+                      child: Text('Filter by Tags'),
                     ),
                     const PopupMenuItem<String>(
-                      value: 'Rating',
-                      child: Text('Filter by Rating'),
+                      value: 'Budget',
+                      child: Text('Filter by Budget'),
                     ),
-                    const PopupMenuItem<String>(
-                      value: 'Distance',
-                      child: Text('Filter by Distance'),
-                    ),
+                    // Add other filter options here if needed
                   ],
                   color: const Color(0xFFD4EAF7),
                   position: PopupMenuPosition.under,
@@ -249,12 +462,28 @@ class _SearchPageState extends State<SearchPage> {
             const SizedBox(height: 20),
 
             Center(
-              child: Text(
-                'Current Sort: $selectedSort',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    'Current Sort: $selectedSort',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (selectedTags.isNotEmpty)
+                    Text(
+                      'Filter by: ${selectedTags.join(', ')}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                      ),
+                    ),
+                  if (_isBudgetFilterActive)
+                    Text(
+                      'Budget: \$${_selectedBudgetRange.start.round()} - \$${_selectedBudgetRange.end.round()}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                ],
               ),
             ),
 
@@ -297,7 +526,6 @@ class _SearchPageState extends State<SearchPage> {
                 return GestureDetector(
                   onTap: () async {
                     if (widget.fromLocationButton) {
-                      // If the Location Button triggered this, navigate to `DestinationDetailPage`
                       final subDestinationName = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -308,20 +536,17 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                       );
-
-                      // Log and pass back the received `subDestinationName` from DestinationDetailPage
                       devtools.log(
                           'Received subDestinationName from DestinationDetailPage: $subDestinationName');
                       if (subDestinationName != null) {
-                        Navigator.pop(context,
-                            subDestinationName); // Pass subDestinationName back to PlanningView
+                        Navigator.pop(context, subDestinationName);
                       }
                     } else {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => DestinationDetailPage(
                             destinationId: destination['destinationId'],
-                            subdestinationId: destination['id'], 
+                            subdestinationId: destination['id'],
                           ),
                         ),
                       );

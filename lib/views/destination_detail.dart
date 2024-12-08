@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'package:travelcustom/views/sub_destination.dart';
 import 'dart:developer' as devtools show log;
@@ -28,7 +27,7 @@ class DestinationDetailPage extends StatefulWidget {
 class _DestinationDetailPageState extends State<DestinationDetailPage> {
   final DestinationContent _destinationContent = DestinationContent();
   final ValueNotifier<bool> _isFavoritedNotifier = ValueNotifier<bool>(false);
-  bool _interactionRecorded = false;
+  // bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};
   Uint8List? destinationImageData;
   final ValueNotifier<int> _reviewCountNotifier = ValueNotifier<int>(0);
@@ -55,18 +54,11 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
     _isFavoritedNotifier.value = isFavorited;
   }
 
-  void _toggleFavourite() async {
-    bool newFavoritedState = !_isFavoritedNotifier.value;
-    await _destinationContent.toggleFavourite(
-        widget.destinationId, newFavoritedState);
-    _isFavoritedNotifier.value = newFavoritedState;
-  }
-
-  void trackUserViewInteraction(Map<String, dynamic> destinationData) async {
+  void trackUserViewInteraction(Map<String, dynamic> subDestinationData) async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
       await _destinationContent.trackUserViewInteraction(
-          userId, widget.destinationId, destinationData);
+          userId, widget.subdestinationId!, subDestinationData);
     } else {
       devtools.log('User is not logged in');
     }
@@ -83,6 +75,11 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
           'PPP Returning subDestinationName: $subDestinationName to SearchPage');
       Navigator.pop(context, subDestinationName);
       Navigator.pop(context, subDestinationName);
+    } else {
+      // Fetch sub-destination details and track interaction
+      _destinationContent.getSubDestinationDetails(widget.destinationId, subDestinationName).then((subDestinationData) {
+        trackUserViewInteraction(subDestinationData);
+      });
     }
   }
 
@@ -204,11 +201,6 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
 
           final destinationData = snapshot.data!.data() as Map<String, dynamic>;
 
-          if (!_interactionRecorded) {
-            trackUserViewInteraction(destinationData);
-            _interactionRecorded = true;
-          }
-
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -244,25 +236,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                           ),
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: _isFavoritedNotifier,
-                          builder: (context, isFavourited, child) {
-                            return IconButton(
-                              onPressed: _toggleFavourite,
-                              icon: FaIcon(
-                                FontAwesomeIcons.solidStar,
-                                color: isFavourited
-                                    ? Colors.yellow
-                                    : const Color.fromARGB(255, 169, 169, 169)
-                                        .withOpacity(0.7),
-                                size: 36.0,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      // Remove the favorite button from here
                     ],
                   ),
                 ),

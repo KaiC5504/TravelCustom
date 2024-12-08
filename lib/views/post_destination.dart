@@ -221,8 +221,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         'description': _descriptionController.text,
         'name': _nameController.text,
         'image': '',
-        'estimate_cost':
-            double.tryParse(_costController.text)?.toStringAsFixed(2) ?? '0.00',
+        'estimate_cost': int.tryParse(_costController.text) ?? 0,
         'location': selectedState,
         'post_date': Timestamp.now(),
         'tags': _selectedTags,
@@ -463,6 +462,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
     return ChoiceChip(
       label: Text(label),
       selected: _selectedTags.contains(label),
+      backgroundColor: Colors.white,
       onSelected: (selected) {
         setState(() {
           if (selected) {

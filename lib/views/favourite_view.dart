@@ -35,44 +35,50 @@ class _FavouritePageState extends State<FavouritePage> {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
     try {
-      // Retrieve user's document from Firestore
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .get();
 
-      // Check if the document exists and contains a 'favourites' field
       if (userDoc.exists && userDoc['favourites'] != null) {
         List<dynamic> favourites = userDoc['favourites'];
 
-        // Retrieve matching destinations from 'destinations' collection
-        for (String destinationId in favourites) {
-          DocumentSnapshot destinationDoc = await FirebaseFirestore.instance
-              .collection('destinations')
-              .doc(destinationId)
-              .get();
+        // Get all destinations first
+        QuerySnapshot destinationsSnapshot =
+            await FirebaseFirestore.instance.collection('destinations').get();
 
-          if (destinationDoc.exists) {
-            Map<String, dynamic> destinationData =
-                destinationDoc.data() as Map<String, dynamic>;
-            destinationData['id'] = destinationDoc.id;
-
+        // For each destination, check its sub_destinations
+        for (var destinationDoc in destinationsSnapshot.docs) {
+          for (String subDestinationId in favourites) {
             try {
-              final ref = _storage
-                  .ref()
-                  .child('destination_images/$destinationId.webp');
-              Uint8List? destinationImageBytes = await ref.getData(100000000);
-              destinationImages[destinationId] = destinationImageBytes;
-            } catch (e) {
-              if (e is FirebaseException && e.code == 'object-not-found') {
-                devtools.log(
-                    'No destination image found for $destinationId, using default image.');
-              } else {
-                devtools.log('Error fetching image for $destinationId: $e');
-              }
-            }
+              DocumentSnapshot subDestDoc = await FirebaseFirestore.instance
+                  .collection('destinations')
+                  .doc(destinationDoc.id)
+                  .collection('sub_destinations')
+                  .doc(subDestinationId)
+                  .get();
 
-            favouriteDestinations.add(destinationData);
+              if (subDestDoc.exists) {
+                Map<String, dynamic> subDestinationData =
+                    subDestDoc.data() as Map<String, dynamic>;
+                subDestinationData['id'] = subDestDoc.id;
+
+                try {
+                  final ref = _storage
+                      .ref()
+                      .child('destination_images/${subDestDoc.id}.webp');
+                  Uint8List? destinationImageBytes =
+                      await ref.getData(100000000);
+                  destinationImages[subDestDoc.id] = destinationImageBytes;
+                } catch (e) {
+                  devtools.log('Error fetching image: $e');
+                }
+
+                favouriteDestinations.add(subDestinationData);
+              }
+            } catch (e) {
+              devtools.log('Error fetching sub-destination: $e');
+            }
           }
         }
       }
@@ -157,8 +163,7 @@ class _FavouritePageState extends State<FavouritePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              destination['destination'] ??
-                                  'Unknown Destination',
+                              destination['name'] ?? 'Unknown Destination',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 25,

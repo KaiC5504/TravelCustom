@@ -21,6 +21,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
   List<Map<String, dynamic>> days = [];
   Map<String, String> destinationNames = {};
   bool isLoading = true;
+  final List<String> _selectedTags = [];
 
   @override
   void initState() {
@@ -125,7 +126,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
     String planName = _nameController.text.trim();
     String cost = _costController.text.trim();
 
-    if (planName.isEmpty || cost.isEmpty) {
+    if (planName.isEmpty || cost.isEmpty || _selectedTags.isEmpty) {
       _emptyFieldsDialog();
       return;
     }
@@ -157,6 +158,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
       travelPlanData['plan_name'] = planName;
       travelPlanData['estimated_cost'] = cost;
       travelPlanData['post_date'] = Timestamp.now();
+      travelPlanData['tags'] = _selectedTags;
 
       // New Doc for platform_plans
       DocumentReference platformPlanDoc =
@@ -246,6 +248,31 @@ class _PostPlanPageState extends State<PostPlanPage> {
                 fillColor: Colors.white,
               ),
             ),
+            SizedBox(height: 20.0),
+            Text(
+              'Tags (Max 2)',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16.0,
+              ),
+            ),
+            SizedBox(height: 8.0),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: [
+                _buildChoiceChip('Urban'),
+                _buildChoiceChip('Nightlife'),
+                _buildChoiceChip('History'),
+                _buildChoiceChip('Art'),
+                _buildChoiceChip('Adventure'),
+                _buildChoiceChip('Beach'),
+                _buildChoiceChip('Nature'),
+                _buildChoiceChip('Agriculture'),
+                _buildChoiceChip('Island'),
+                _buildChoiceChip('Family-friendly'),
+              ],
+            ),
             SizedBox(height: 25.0),
             Text(
               'Preview Travel Plan',
@@ -303,7 +330,7 @@ class _PostPlanPageState extends State<PostPlanPage> {
                               );
                             }).toList(),
                           ),
-                  )
+                  ),
           ],
         ),
       ),
@@ -335,6 +362,25 @@ class _PostPlanPageState extends State<PostPlanPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildChoiceChip(String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _selectedTags.contains(label),
+      backgroundColor: Colors.white,
+      onSelected: (selected) {
+        setState(() {
+          if (selected) {
+            if (_selectedTags.length < 2) {
+              _selectedTags.add(label);
+            }
+          } else {
+            _selectedTags.remove(label);
+          }
+        });
+      },
     );
   }
 }

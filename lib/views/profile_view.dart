@@ -14,6 +14,7 @@ import 'dart:developer' as devtools show log;
 import 'package:travelcustom/views/favourite_view.dart';
 import 'package:travelcustom/views/profile_edit.dart';
 import 'package:path/path.dart' as p;
+import 'package:travelcustom/views/statistic.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -98,17 +99,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> refreshProfileData() async {
     await fetchUserData(); // Save name to local storage
-  }
-
-  Future<void> updateUserRole(String role) async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final uid = user.uid;
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'role': role,
-      });
-      await fetchUserData(); // Refresh data after updating role
-    }
   }
 
   @override
@@ -272,49 +262,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 // Menu Options
                 ListTile(
-                  leading: const FaIcon(FontAwesomeIcons.userTag),
-                  title: const Text('Role'),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('Select Your Role'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.person),
-                                title: const Text('Traveller'),
-                                onTap: () async {
-                                  await updateUserRole('Traveller');
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.business),
-                                title: const Text('Travel Agency'),
-                                onTap: () async {
-                                  await updateUserRole('Travel Agency');
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Cancel'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-                ListTile(
                   leading: const FaIcon(FontAwesomeIcons.map),
                   title: const Text('My Travelling Plan'),
                   onTap: () {}, // Placeholder for future function
@@ -329,6 +276,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     );
                   },
                 ),
+                if (role == 'Travel Agency')
+                  ListTile(
+                    leading: const Icon(Icons.bar_chart),
+                    title: const Text('Statistics'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => const StatisticPage()),
+                      );
+                    },
+                  ),
                 ListTile(
                   leading: const Icon(Icons.logout),
                   title: const Text('Logout'),
