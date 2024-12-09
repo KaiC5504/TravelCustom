@@ -45,13 +45,13 @@ class _SearchPageState extends State<SearchPage> {
     'Family-friendly'
   ];
 
-  RangeValues _selectedBudgetRange = const RangeValues(0, 1000); // Add this
-  bool _isBudgetFilterActive = false; // Add this
+  RangeValues _selectedBudgetRange = const RangeValues(0, 1000); 
+  bool _isBudgetFilterActive = false; 
 
   @override
   void initState() {
     super.initState();
-    selectedTags = widget.initialTags; // Set initial tags
+    selectedTags = widget.initialTags; 
     _fetchDestinations();
   }
 
@@ -61,7 +61,6 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  // Fetch all destinations from Firestore and store locally
   Future<void> _fetchDestinations() async {
     devtools.log('Starting to fetch destinations');
     setState(() {
@@ -72,10 +71,7 @@ class _SearchPageState extends State<SearchPage> {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collectionGroup('sub_destinations')
           .get();
-
-      devtools.log('Retrieved ${snapshot.docs.length} documents');
       
-      // Use a Map to track unique documents by ID
       Map<String, Map<String, dynamic>> uniqueDestinations = {};
 
       for (var doc in snapshot.docs) {
@@ -83,7 +79,6 @@ class _SearchPageState extends State<SearchPage> {
         if (!uniqueDestinations.containsKey(docId)) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           
-          // Handle numeric fields carefully
           num estimateCost = 0;
           if (data['estimate_cost'] != null) {
             if (data['estimate_cost'] is String) {
@@ -125,7 +120,7 @@ class _SearchPageState extends State<SearchPage> {
 
       List<Map<String, dynamic>> fetchedDestinations = uniqueDestinations.values.toList();
 
-      // Keep existing image fetching logic
+      // Fetch images for each destination
       for (var destination in fetchedDestinations) {
         String destinationId = destination['id'];
         try {
@@ -154,7 +149,7 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  // Handle debounced search input
+  // Search bar debounce
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
@@ -170,12 +165,11 @@ class _SearchPageState extends State<SearchPage> {
     return input.trim().toLowerCase();
   }
 
-  // Filter local list based on search query and selected tags
+  // Filter local list 
   List<Map<String, dynamic>> _filteredDestinations() {
     List<Map<String, dynamic>> filteredList = [];
 
-    devtools.log('Selected Tags: $selectedTags');
-
+    // Apply filters
     if (searchQuery.isEmpty && selectedTags.isEmpty && !_isBudgetFilterActive) {
       filteredList = List.from(localDestination);
     } else {
@@ -189,13 +183,11 @@ class _SearchPageState extends State<SearchPage> {
         bool matchesBudget = !_isBudgetFilterActive ||
             (destination['estimate_cost'] >= _selectedBudgetRange.start &&
                 destination['estimate_cost'] <= _selectedBudgetRange.end);
-        devtools.log(
-            'Destination: ${destination['name']}, Tags: ${destination['tags']}, Matches: $matchesTags');
         return matchesQuery && matchesTags && matchesBudget;
       }).toList();
     }
 
-    // Apply sorting based on the selectedSort value
+    // Apply sorting 
     if (selectedSort == 'Name') {
       filteredList.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
     } else if (selectedSort == 'Rating') {
@@ -205,9 +197,6 @@ class _SearchPageState extends State<SearchPage> {
       filteredList.sort(
           (a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
     }
-
-    devtools
-        .log('Filtered List: ${filteredList.map((d) => d['name']).toList()}');
 
     return filteredList;
   }

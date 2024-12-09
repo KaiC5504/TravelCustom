@@ -55,8 +55,8 @@ class _LoginViewState extends State<LoginView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color.fromARGB(255, 162, 136, 222),
+        title: const Text('', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.grey[200],
         scrolledUnderElevation: 0,
       ),
       backgroundColor: Colors.grey[200],

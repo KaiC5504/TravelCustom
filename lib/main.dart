@@ -12,7 +12,7 @@ import 'package:travelcustom/views/register_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
 import 'package:travelcustom/views/travel_plan_view.dart';
-
+import 'package:get/get.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +22,10 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp( 
       title: 'TravelCustom',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -32,17 +33,37 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const CustomBottomNavigationBar(),
-      routes: {
-        registerRoute: (context) => const RegisterView(),
-        loginRoute: (context) => const LoginView(),
-        travelRoute: (context) => const TravelView(),
-        searchRoute: (context) => const SearchPage(),
-        profileRoute: (context) => const ProfilePage(),
-        naviRoute: (context) => const CustomBottomNavigationBar(),
-        planRoute: (context) => const TravelPlanView(),
-        favouriteRoute: (context) => const FavouritePage(),
-        editRoute: (context) => const ProfileEditPage(),
-      },
+      initialRoute: '/home',
+      defaultTransition: Transition.fadeIn,
+      getPages: [
+        GetPage(
+          name: '/home',
+          page: () => const HomePage(),
+          transition: Transition.fadeIn,
+        ),
+        GetPage(
+          name: '/navi',
+          page: () => const CustomBottomNavigationBar(),
+          binding: BindingsBuilder(() {
+            final args = Get.arguments as Map<String, dynamic>?;
+            Get.put(NavigationController(
+              initialIndex: args?['initialIndex'] ?? 0,
+              showAddDayDialog: args?['showAddDayDialog'] ?? false,
+              initialSideNote: args?['initialSideNote'],
+            ), permanent: true);
+          }),
+          transition: Transition.fadeIn,
+        ),
+        GetPage(name: registerRoute, page: () => const RegisterView()),
+        GetPage(name: loginRoute, page: () => const LoginView()),
+        GetPage(name: travelRoute, page: () => const TravelView()),
+        GetPage(name: searchRoute, page: () => const SearchPage()),
+        GetPage(name: profileRoute, page: () => const ProfilePage()),
+        GetPage(name: naviRoute, page: () => const CustomBottomNavigationBar()),
+        GetPage(name: planRoute, page: () => const TravelPlanView()),
+        GetPage(name: favouriteRoute, page: () => const FavouritePage()),
+        GetPage(name: editRoute, page: () => const ProfileEditPage()),
+      ],
     );
   }
 }

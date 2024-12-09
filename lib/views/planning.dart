@@ -17,6 +17,8 @@ class PlanningView extends StatefulWidget {
   final bool existingDay;
   final String? subDestinationName;
   final bool addToSideNote;
+  final bool showAddDayDialog;
+  final String? initialSideNote;
 
   const PlanningView(
       {super.key,
@@ -25,7 +27,9 @@ class PlanningView extends StatefulWidget {
       this.newDay = false,
       this.existingDay = false,
       this.subDestinationName,
-      this.addToSideNote = false});
+      this.addToSideNote = false,
+      this.showAddDayDialog = false,
+      this.initialSideNote});
 
   @override
   State<PlanningView> createState() => _PlanningViewState();
@@ -43,16 +47,25 @@ class _PlanningViewState extends State<PlanningView> {
   final ValueNotifier<int> _reviewCountNotifier = ValueNotifier<int>(0);
   final GlobalKey<PlanReviewsWidgetState> _reviewsWidgetKey =
       GlobalKey<PlanReviewsWidgetState>();
+  bool _dataInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    fetchTravelPlanDetails();
+    _initializePlan();
+  }
 
-    if (widget.newDay ||
-        (widget.addToSideNote && widget.subDestinationName != null)) {
+  Future<void> _initializePlan() async {
+    await fetchTravelPlanDetails();
+    setState(() {
+      _dataInitialized = true;
+    });
+    
+    // Only show dialog after data is initialized
+    if (_dataInitialized && widget.showAddDayDialog && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _addDay();
+        int nextDayNumber = activities.length + 1;
+        _addDay(initialSideNote: widget.initialSideNote, forcedDayNumber: nextDayNumber);
       });
     }
   }
@@ -64,48 +77,46 @@ class _PlanningViewState extends State<PlanningView> {
   }
 
   Future<void> fetchTravelPlanDetails() async {
-    if (mounted) {
+    try {
+      if (!mounted) return;
       setState(() {
         isLoading = true;
       });
-    }
 
-    try {
       String planId = widget.planId ?? await _getUserPlanId();
-
-      if (planId.isEmpty) return;
+      if (planId.isEmpty) {
+        setState(() {
+          activities = [];
+          isLoading = false;
+        });
+        return;
+      }
 
       DocumentSnapshot planDoc = await FirebaseFirestore.instance
-          .collection(widget.collectionName) // Use platform_plans collection
+          .collection(widget.collectionName)
           .doc(planId)
           .get();
 
+      if (!mounted) return;
+
       if (planDoc.exists) {
-        Map<String, dynamic>? planData =
-            planDoc.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? planData = planDoc.data() as Map<String, dynamic>?;
         if (planData != null) {
           List<Map<String, dynamic>> fetchedDays =
               List<Map<String, dynamic>>.from(planData['days'] ?? []);
 
-          if (fetchedDays.isEmpty) {
-          } else {}
-          // Log the details of each day by index
-
-          if (mounted) {
-            setState(() {
-              planName = planData['plan_name'] ?? '';
-              Timestamp startTimestamp = planData['start'] ?? Timestamp.now();
-              Timestamp endTimestamp = planData['end'] ?? Timestamp.now();
-              startDate =
-                  DateFormat('dd-MM-yyyy').format(startTimestamp.toDate());
-              endDate = DateFormat('dd-MM-yyyy').format(endTimestamp.toDate());
-              activities = fetchedDays;
-            });
-          }
+          setState(() {
+            activities = fetchedDays;
+            planName = planData['plan_name'] ?? '';
+            startDate = DateFormat('dd-MM-yyyy')
+                .format((planData['start'] as Timestamp).toDate());
+            endDate = DateFormat('dd-MM-yyyy')
+                .format((planData['end'] as Timestamp).toDate());
+          });
         }
-      } else {}
+      }
     } catch (e) {
-      devtools.log('Error fetching platform plan details: $e');
+      devtools.log('Error fetching plan details: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -125,8 +136,9 @@ class _PlanningViewState extends State<PlanningView> {
     return userDoc.exists ? userDoc['planId'] ?? '' : '';
   }
 
-  Future<void> _addDay({String? initialSideNote}) async {
-    int newDayNumber = activities.length + 1;
+  Future<void> _addDay({String? initialSideNote, int? forcedDayNumber}) async {
+    // Use forcedDayNumber if provided, otherwise calculate based on current activities
+    int newDayNumber = forcedDayNumber ?? activities.length + 1;
     TextEditingController dayTitleController = TextEditingController();
     List<String> newSideNotes = [];
 

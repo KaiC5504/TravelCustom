@@ -2,8 +2,11 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
+import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'dart:developer' as devtools show log;
+import 'package:travelcustom/views/planning.dart';
 
 class SubDestinationsCard extends StatefulWidget {
   final String destinationId;
@@ -86,33 +89,15 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
 
   void _onAddToPlan(String subDestinationName) {
     if (widget.fromLocationButton) {
-      // Directly add to side note in Planning without showing dialog
       widget.onAddToPlan?.call(subDestinationName);
     } else {
-      // Show dialog with New Day or Existing Day options if not from Location Button
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Add to Plan'),
-            content: Text('Add to a new day or an existing day?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onAddToPlan?.call(subDestinationName);
-                },
-                child: Text('New Day'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onAddToPlan?.call(subDestinationName);
-                },
-                child: Text('Existing Day'),
-              ),
-            ],
-          );
+      Get.offNamedUntil(
+        '/navi',
+        (route) => false,
+        arguments: {
+          'initialIndex': 2,
+          'showAddDayDialog': true,
+          'initialSideNote': subDestinationName,
         },
       );
     }

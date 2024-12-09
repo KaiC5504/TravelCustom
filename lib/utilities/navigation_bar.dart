@@ -11,7 +11,12 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(NavigationController());
+    // Initialize the controller here instead of using Get.find
+    final controller = Get.put(NavigationController(
+      initialIndex: 0,
+      showAddDayDialog: false,
+      initialSideNote: null,
+    ));
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
@@ -83,12 +88,29 @@ class CustomBottomNavigationBar extends StatelessWidget {
 }
 
 class NavigationController extends GetxController {
-  final Rx<int> selectedIndex = 0.obs;
+  final Rx<int> selectedIndex;
+  final bool showAddDayDialog;
+  final String? initialSideNote;
 
-  final screens = [
-    const TravelView(),
-    const PlatformPage(),
-    const PlanningView(),
-    const ProfilePage(),
-  ];
+  NavigationController({
+    int initialIndex = 0,
+    this.showAddDayDialog = false,
+    this.initialSideNote,
+  }) : selectedIndex = initialIndex.obs;
+
+  late final List<Widget> screens;
+
+  @override
+  void onInit() {
+    super.onInit();
+    screens = [
+      const TravelView(),
+      const PlatformPage(),
+      PlanningView(
+        showAddDayDialog: showAddDayDialog,
+        initialSideNote: initialSideNote,
+      ),
+      const ProfilePage(),
+    ];
+  }
 }
