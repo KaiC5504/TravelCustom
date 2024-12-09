@@ -91,14 +91,10 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     if (widget.fromLocationButton) {
       widget.onAddToPlan?.call(subDestinationName);
     } else {
-      Get.offNamedUntil(
-        '/navi',
-        (route) => false,
-        arguments: {
-          'initialIndex': 2,
-          'showAddDayDialog': true,
-          'initialSideNote': subDestinationName,
-        },
+      final controller = Get.find<NavigationController>();
+      controller.navigateToPlan(
+        showDialog: true,
+        sideNote: subDestinationName,
       );
     }
   }

@@ -17,6 +17,19 @@ import 'package:get/get.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  Get.config(
+    enableLog: false,
+    defaultTransition: Transition.noTransition,
+    defaultPopGesture: false,
+  );
+  
+  Get.put(NavigationController(
+    initialIndex: 0,
+    showAddDayDialog: false,
+    initialSideNote: null,
+  ), permanent: true);
+  
   runApp(const MyApp());
 }
 
@@ -32,64 +45,96 @@ class MyApp extends StatelessWidget {
             seedColor: const Color.fromARGB(255, 136, 101, 197)),
         useMaterial3: true,
       ),
-      home: const CustomBottomNavigationBar(),
       initialRoute: '/home',
-      defaultTransition: Transition.fadeIn,
+      defaultTransition: Transition.noTransition,
       getPages: [
         GetPage(
           name: '/home',
-          page: () => const HomePage(),
-          transition: Transition.fadeIn,
+          page: () => const CustomBottomNavigationBar(),
+          transition: Transition.noTransition,
         ),
         GetPage(
-          name: '/navi',
+          name: naviRoute,
           page: () => const CustomBottomNavigationBar(),
-          binding: BindingsBuilder(() {
-            final args = Get.arguments as Map<String, dynamic>?;
-            Get.put(NavigationController(
-              initialIndex: args?['initialIndex'] ?? 0,
-              showAddDayDialog: args?['showAddDayDialog'] ?? false,
-              initialSideNote: args?['initialSideNote'],
-            ), permanent: true);
-          }),
-          transition: Transition.fadeIn,
+          transition: Transition.noTransition,
+          middlewares: [
+            NavigationMiddleware(),
+          ],
         ),
-        GetPage(name: registerRoute, page: () => const RegisterView()),
-        GetPage(name: loginRoute, page: () => const LoginView()),
-        GetPage(name: travelRoute, page: () => const TravelView()),
-        GetPage(name: searchRoute, page: () => const SearchPage()),
-        GetPage(name: profileRoute, page: () => const ProfilePage()),
-        GetPage(name: naviRoute, page: () => const CustomBottomNavigationBar()),
-        GetPage(name: planRoute, page: () => const TravelPlanView()),
-        GetPage(name: favouriteRoute, page: () => const FavouritePage()),
-        GetPage(name: editRoute, page: () => const ProfileEditPage()),
+        GetPage(
+          name: registerRoute, 
+          page: () => const RegisterView(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: loginRoute, 
+          page: () => const LoginView(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: travelRoute, 
+          page: () => const TravelView(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: searchRoute, 
+          page: () => const SearchPage(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: profileRoute, 
+          page: () => const ProfilePage(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: planRoute, 
+          page: () => const TravelPlanView(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: favouriteRoute, 
+          page: () => const FavouritePage(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
+        GetPage(
+          name: editRoute, 
+          page: () => const ProfileEditPage(),
+          preventDuplicates: true,
+          transition: Transition.noTransition,
+        ),
       ],
     );
   }
 }
 
+class NavigationMiddleware extends GetMiddleware {
+  @override
+  RouteSettings? redirect(String? route) {
+    // Preserve arguments when redirecting
+    if (route == '/home' && Get.arguments != null) {
+      return RouteSettings(
+        name: route,
+        arguments: Get.arguments,
+      );
+    }
+    return null;
+  }
+}
+
+// Remove or modify HomePage class since it's no longer needed
+// If you keep it, modify it to return CustomBottomNavigationBar directly:
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      ),
-      builder: (context, snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.done:
-            final user = FirebaseAuth.instance.currentUser;
-            if (user != null) {
-              return const TravelView();
-            } else {
-              return const LoginView();
-            }
-          default:
-            return const CircularProgressIndicator();
-        }
-      },
-    );
+    return const CustomBottomNavigationBar();
   }
 }
