@@ -813,6 +813,47 @@ class _PlanningViewState extends State<PlanningView> {
 
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text('Travel Plan'),
+          backgroundColor: Colors.grey[200],
+          scrolledUnderElevation: 0,
+        ),
+        backgroundColor: Colors.grey[200],
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 80,
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'You are not logged in',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed(loginRoute);
+                },
+                child: const Text('Log In'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
