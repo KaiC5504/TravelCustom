@@ -1,6 +1,8 @@
 # travelcustom
 
-A new Flutter project.
+TravelCustom
+Java version 23
+Gradle 3.10
 
 ## Getting Started
 
