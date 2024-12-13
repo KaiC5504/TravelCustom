@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:developer' as devtools show log;
+import 'package:travelcustom/utilities/display_error.dart';
 
 class PostPlanPage extends StatefulWidget {
   const PostPlanPage({super.key});
@@ -103,22 +104,9 @@ class _PostPlanPageState extends State<PostPlanPage> {
   }
 
   void _emptyFieldsDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Center(child: Text('Fields not complete')),
-          content: Text('Please fill in all fields'),
-          actions: [
-            // TextButton(
-            //   onPressed: () {
-            //     Navigator.of(context).pop(); // Close the dialog
-            //   },
-            //   child: Text('OK'),
-            // ),
-          ],
-        );
-      },
+    displayCustomErrorMessage(
+      context,
+      'Please fill in all fields',
     );
   }
 

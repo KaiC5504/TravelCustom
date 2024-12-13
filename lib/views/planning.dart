@@ -9,6 +9,7 @@ import 'package:travelcustom/constants/routes.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:travelcustom/utilities/display_error.dart';
 
 class PlanningView extends StatefulWidget {
   final String? planId;
@@ -60,12 +61,14 @@ class _PlanningViewState extends State<PlanningView> {
     setState(() {
       _dataInitialized = true;
     });
-    
+
     // Only show dialog after data is initialized
     if (_dataInitialized && widget.showAddDayDialog && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         int nextDayNumber = activities.length + 1;
-        _addDay(initialSideNote: widget.initialSideNote, forcedDayNumber: nextDayNumber);
+        _addDay(
+            initialSideNote: widget.initialSideNote,
+            forcedDayNumber: nextDayNumber);
       });
     }
   }
@@ -100,7 +103,8 @@ class _PlanningViewState extends State<PlanningView> {
       if (!mounted) return;
 
       if (planDoc.exists) {
-        Map<String, dynamic>? planData = planDoc.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? planData =
+            planDoc.data() as Map<String, dynamic>?;
         if (planData != null) {
           List<Map<String, dynamic>> fetchedDays =
               List<Map<String, dynamic>>.from(planData['days'] ?? []);
@@ -293,17 +297,15 @@ class _PlanningViewState extends State<PlanningView> {
                                 String dayTitle =
                                     dayTitleController.text.trim();
                                 if (dayTitle.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(
-                                            'Please enter a title for the day.')),
+                                  displayCustomErrorMessage(
+                                    context,
+                                    'Please enter a title for the day',
                                   );
                                   return;
                                 }
 
                                 await _saveNewDayToFirestore(
                                     newDayNumber, dayTitle, newSideNotes);
-                                // Navigator.of(context).pop();
                                 Navigator.of(context).pushNamedAndRemoveUntil(
                                     naviRoute, (Route<dynamic> route) => false);
                                 await fetchTravelPlanDetails(); // Refresh the plan view
@@ -556,6 +558,22 @@ class _PlanningViewState extends State<PlanningView> {
                 ),
                 TextButton(
                   onPressed: () async {
+                    // Add validation
+                    if (rating == 0) {
+                      displayCustomErrorMessage(
+                        context,
+                        'Please provide a rating',
+                      );
+                      return;
+                    }
+                    if (reviewController.text.trim().isEmpty) {
+                      displayCustomErrorMessage(
+                        context,
+                        'Please write a review',
+                      );
+                      return;
+                    }
+
                     await FirebaseFirestore.instance
                         .collection('platform_plans')
                         .doc(widget.planId)
@@ -726,10 +744,9 @@ class _PlanningViewState extends State<PlanningView> {
                                 String dayTitle =
                                     dayTitleController.text.trim();
                                 if (dayTitle.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(
-                                            'Please enter a title for the day.')),
+                                  displayCustomErrorMessage(
+                                    context,
+                                    'Please enter a title for the day',
                                   );
                                   return;
                                 }

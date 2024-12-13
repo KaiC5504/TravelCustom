@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:travelcustom/utilities/destination_content.dart';
 import 'package:travelcustom/utilities/navigation_bar.dart';
 import 'dart:developer' as devtools show log;
-import 'package:travelcustom/views/planning.dart';
 
 class SubDestinationsCard extends StatefulWidget {
   final String destinationId;

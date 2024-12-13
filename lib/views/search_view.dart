@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:travelcustom/views/destination_detail.dart';
-import 'dart:developer' as devtools show log;
+import 'dart:developer' as devtools show log; 
 
 class SearchPage extends StatefulWidget {
   final bool fromLocationButton;
@@ -45,13 +45,13 @@ class _SearchPageState extends State<SearchPage> {
     'Family-friendly'
   ];
 
-  RangeValues _selectedBudgetRange = const RangeValues(0, 1000); 
-  bool _isBudgetFilterActive = false; 
+  RangeValues _selectedBudgetRange = const RangeValues(0, 1000);
+  bool _isBudgetFilterActive = false;
 
   @override
   void initState() {
     super.initState();
-    selectedTags = widget.initialTags; 
+    selectedTags = widget.initialTags;
     _fetchDestinations();
   }
 
@@ -71,14 +71,14 @@ class _SearchPageState extends State<SearchPage> {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collectionGroup('sub_destinations')
           .get();
-      
+
       Map<String, Map<String, dynamic>> uniqueDestinations = {};
 
       for (var doc in snapshot.docs) {
         String docId = doc.id;
         if (!uniqueDestinations.containsKey(docId)) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          
+
           num estimateCost = 0;
           if (data['estimate_cost'] != null) {
             if (data['estimate_cost'] is String) {
@@ -118,13 +118,15 @@ class _SearchPageState extends State<SearchPage> {
         }
       }
 
-      List<Map<String, dynamic>> fetchedDestinations = uniqueDestinations.values.toList();
+      List<Map<String, dynamic>> fetchedDestinations =
+          uniqueDestinations.values.toList();
 
       // Fetch images for each destination
       for (var destination in fetchedDestinations) {
         String destinationId = destination['id'];
         try {
-          final ref = _storage.ref().child('destination_images/$destinationId.webp');
+          final ref =
+              _storage.ref().child('destination_images/$destinationId.webp');
           Uint8List? destinationImageBytes = await ref.getData(100000000);
           destinationImages[destinationId] = destinationImageBytes;
         } catch (e) {
@@ -136,7 +138,8 @@ class _SearchPageState extends State<SearchPage> {
         setState(() {
           localDestination = fetchedDestinations;
           _isLoading = false;
-          devtools.log('Successfully loaded ${localDestination.length} destinations');
+          devtools.log(
+              'Successfully loaded ${localDestination.length} destinations');
         });
       }
     } catch (e) {
@@ -165,7 +168,7 @@ class _SearchPageState extends State<SearchPage> {
     return input.trim().toLowerCase();
   }
 
-  // Filter local list 
+  // Filter local list
   List<Map<String, dynamic>> _filteredDestinations() {
     List<Map<String, dynamic>> filteredList = [];
 
@@ -187,7 +190,7 @@ class _SearchPageState extends State<SearchPage> {
       }).toList();
     }
 
-    // Apply sorting 
+    // Apply sorting
     if (selectedSort == 'Name') {
       filteredList.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
     } else if (selectedSort == 'Rating') {
@@ -272,8 +275,8 @@ class _SearchPageState extends State<SearchPage> {
                     min: 0,
                     max: 1000,
                     divisions: 20,
-                    labels: RangeLabels('\$${tempBudgetRange.start.round()}',
-                        '\$${tempBudgetRange.end.round()}'),
+                    labels: RangeLabels('RM${tempBudgetRange.start.round()}',
+                        'RM${tempBudgetRange.end.round()}'),
                     onChanged: (RangeValues values) {
                       setState(() {
                         tempBudgetRange = values;
@@ -281,7 +284,7 @@ class _SearchPageState extends State<SearchPage> {
                     },
                   ),
                   Text(
-                    'Budget: \$${tempBudgetRange.start.round()} - \$${tempBudgetRange.end.round()}',
+                    'Budget: RM${tempBudgetRange.start.round()} - RM${tempBudgetRange.end.round()}',
                     style: const TextStyle(fontSize: 16),
                   ),
                 ],
@@ -469,7 +472,7 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   if (_isBudgetFilterActive)
                     Text(
-                      'Budget: \$${_selectedBudgetRange.start.round()} - \$${_selectedBudgetRange.end.round()}',
+                      'Budget: RM${_selectedBudgetRange.start.round()} - RM${_selectedBudgetRange.end.round()}',
                       style: const TextStyle(fontSize: 14),
                     ),
                 ],

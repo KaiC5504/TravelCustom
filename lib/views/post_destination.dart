@@ -11,6 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'dart:developer' as devtools show log;
 import 'package:path_provider/path_provider.dart';
+import 'package:travelcustom/utilities/display_error.dart';
 
 class PostDestinationPage extends StatefulWidget {
   const PostDestinationPage({super.key});
@@ -177,22 +178,9 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         _image == null ||
         _selectedTags.isEmpty) {
       devtools.log('Please fill all fields and upload an image.');
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Incomplete Information'),
-            content: Text('Please fill all fields and upload an image.'),
-            actions: [
-              // TextButton(
-              //   child: Text('OK'),
-              //   onPressed: () {
-              //     Navigator.of(context).pop();
-              //   },
-              // ),
-            ],
-          );
-        },
+      displayCustomErrorMessage(
+        context,
+        'Please fill all fields and upload an image',
       );
       return;
     }

@@ -129,11 +129,19 @@ class _LoginViewState extends State<LoginView> {
               } on FirebaseAuthException catch (e) {
                 if (e.code == 'invalid-credential') {
                   devtools.log('Invalid credentials');
-                  String errorMessage = 'Invalid Email or Password';
+                  String errorMessage = 'Invalid Credentials';
                   displayCustomErrorMessage(context, errorMessage);
                 } else if (e.code == 'invalid-email') {
                   String errorMessage = 'Invalid email format';
                   displayCustomErrorMessage(context, errorMessage);
+                } else if (e.code == 'user-not-found') {
+                  String errorMessage = 'Invalid Credentials';
+                  displayCustomErrorMessage(context, errorMessage);
+                  devtools.log('User not found');
+                } else if (e.code == 'wrong-password') {
+                  String errorMessage = 'Invalid Credentials';
+                  displayCustomErrorMessage(context, errorMessage);
+                  devtools.log('Wrong password');
                 } else {
                   String errorMessage = e.toString();
                   devtools.log(e.toString());

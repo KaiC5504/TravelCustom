@@ -52,8 +52,8 @@ class CustomErrorMessage extends StatelessWidget {
   }
 }
 
-void displayCustomErrorMessage(BuildContext context, String errorMessage) {
-  showDialog(
+Future<void> displayCustomErrorMessage(BuildContext context, String errorMessage) {
+  return showDialog(
     context: context,
     barrierDismissible: true, // Allows closing by tapping outside
     builder: (context) {

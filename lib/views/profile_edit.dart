@@ -7,6 +7,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:travelcustom/utilities/profile_logic.dart';
+import 'package:travelcustom/utilities/display_error.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({super.key});
@@ -34,20 +35,23 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   @override
   void initState() {
     super.initState();
-    UserProfileMethods.loadUserData(
-      userId: userId,
-      onDataLoaded: (name, username, email, password, phone, avatarBytes) {
-        setState(() {
-          _nameController.text = name;
-          _usernameController.text = username;
-          _emailController.text = email;
-          _passwordController.text = password;
-          _phoneController.text = phone;
-          _avatarBytes = avatarBytes;
-          _currentPassword = password;
-        });
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UserProfileMethods.loadUserData(
+        userId: userId,
+        context: context, // Add context parameter
+        onDataLoaded: (name, username, email, password, phone, avatarBytes) {
+          setState(() {
+            _nameController.text = name;
+            _usernameController.text = username;
+            _emailController.text = email;
+            _passwordController.text = password;
+            _phoneController.text = phone;
+            _avatarBytes = avatarBytes;
+            _currentPassword = password;
+          });
+        },
+      );
+    });
   }
 
   Future<void> _pickImage() async {
@@ -166,6 +170,22 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
               ElevatedButton(
                 onPressed: () async {
+                  if (!_formKey.currentState!.validate()) {
+                    displayCustomErrorMessage(
+                      context,
+                      'Please fill in all fields correctly',
+                    );
+                    return;
+                  }
+                  bool needReauth = _emailController.text !=
+                          FirebaseAuth.instance.currentUser?.email ||
+                      _passwordController.text != _currentPassword;
+
+                  if (needReauth) {
+                    bool reauthed = await _reauthenticateUser();
+                    if (!reauthed) return;
+                  }
+
                   await UserProfileMethods.saveUserData(
                     userId: userId,
                     context: context,
@@ -220,26 +240,36 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           style: TextStyle(fontSize: 18),
           // Adjust validation rules
           validator: (value) {
-            if (label == "YOUR EMAIL") {
-              // Email validation
-              if (value == null || value.isEmpty) {
-                return 'Email cannot be empty';
+            if (value == null || value.isEmpty) {
+              switch (label) {
+                case "NAME":
+                  return 'Name cannot be empty';
+                case "USERNAME":
+                  return 'Username cannot be empty';
+                case "YOUR EMAIL":
+                  return 'Email cannot be empty';
+                case "YOUR PASSWORD":
+                  return 'Password cannot be empty';
+                case "YOUR PHONE":
+                  return 'Phone cannot be empty';
+                default:
+                  return 'This field cannot be empty';
               }
-              // Check if the email format is valid
+            }
+            if (label == "YOUR EMAIL") {
               final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
               if (!emailRegex.hasMatch(value)) {
                 return 'Please enter a valid email';
               }
-            } else if (label == "YOUR PASSWORD") {
-              if (!readOnly && (value == null || value.isEmpty)) {
-                return 'Password cannot be empty';
+            } else if (label == "YOUR USERNAME" && value.length < 3) {
+              return 'Username must be at least 3 characters';
+            } else if (label == "YOUR PASSWORD" && value.length < 6) {
+              return 'Password must be at least 6 characters';
+            } else if (label == "YOUR PHONE") {
+              final phoneRegex = RegExp(r'^\d{8,}$');
+              if (!phoneRegex.hasMatch(value)) {
+                return 'Please enter a valid phone number';
               }
-            } else if (label == "YOUR USERNAME") {
-              if (value != null && value.isNotEmpty && value.length < 10) {
-                return 'Please enter a username';
-              }
-            } else if (label == "NAME" || label == "COUNTRY") {
-              return null;
             }
             return null;
           },
@@ -289,5 +319,129 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         ),
       ],
     );
+  }
+
+  Future<bool> _reauthenticateUser() async {
+    String? password;
+    bool passwordVisible = false;
+
+    bool? result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              title: Column(
+                children: [
+                  Icon(
+                    Icons.security,
+                    size: 40,
+                    color: Colors.blue,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Security Check',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Please enter your current password to make changes',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  TextField(
+                    obscureText: !passwordVisible,
+                    decoration: InputDecoration(
+                      labelText: 'Current Password',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      prefixIcon: Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          passwordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            passwordVisible = !passwordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    onChanged: (value) => password = value,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (password?.isEmpty ?? true) {
+                      displayCustomErrorMessage(
+                        context,
+                        'Please enter your password',
+                      );
+                      return;
+                    }
+                    try {
+                      User? user = FirebaseAuth.instance.currentUser;
+                      if (user != null) {
+                        AuthCredential credential =
+                            EmailAuthProvider.credential(
+                          email: user.email!,
+                          password: password!,
+                        );
+                        await user.reauthenticateWithCredential(credential);
+                        Navigator.pop(context, true);
+                      }
+                    } catch (e) {
+                      displayCustomErrorMessage(
+                        context,
+                        'incorrect password. Please try again.',
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    child: Text('Confirm'),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    return result ?? false;
   }
 }

@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'dart:developer' as devtools show log;
+import 'package:travelcustom/utilities/display_error.dart';
 
 class UserProfileMethods {
   // Retrieve cached image if it exists
@@ -53,11 +54,16 @@ class UserProfileMethods {
 
   static Future<void> loadUserData({
     required String? userId,
+    required BuildContext context,  // Add this parameter
     required Function(String, String, String, String, String, Uint8List?)
         onDataLoaded,
   }) async {
     if (userId == null) {
       devtools.log('User ID is null. The user might not be logged in.');
+      displayCustomErrorMessage(
+        context,
+        'User not logged in. Please sign in again.',
+      );
       return;
     }
 
@@ -81,6 +87,10 @@ class UserProfileMethods {
       }
     } catch (e) {
       devtools.log('Error fetching user data: $e');
+      displayCustomErrorMessage(
+        context,
+        'Failed to load user data. Please try again.',
+      );
     }
   }
 
@@ -98,69 +108,91 @@ class UserProfileMethods {
     File? imageFile,
   }) async {
     if (!(formKey.currentState?.validate() ?? false)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please correct the errors in the form.')),
+      displayCustomErrorMessage(
+        context,
+        'Please fill in all required fields correctly.',
       );
       return;
     }
 
     if (userId == null) {
-      devtools.log('User ID is null. The user might not be logged in.');
+      displayCustomErrorMessage(
+        context,
+        'Session expired. Please sign in again.',
+      );
       return;
     }
 
     try {
       User? user = FirebaseAuth.instance.currentUser;
 
+      // Handle email update if changed
       if (user != null && user.email != email && email != currentEmail) {
         try {
           await user.updateEmail(email);
-          devtools
-              .log('Verification email sent to update email in Firebase Auth');
         } on FirebaseAuthException catch (e) {
           if (e.code == 'requires-recent-login') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Please reauthenticate to change email.')),
+            displayCustomErrorMessage(
+              context,
+              'Please reauthenticate to change email',
             );
             return;
           } else {
             devtools.log('Error updating email: ${e.message}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to update email.')),
+            displayCustomErrorMessage(
+              context,
+              'Failed to update email',
             );
             return;
           }
         }
       }
 
+      // Handle password update if changed
       if (user != null && password != currentPassword) {
         try {
           await user.updatePassword(password);
-          devtools.log('Password updated successfully');
         } on FirebaseAuthException catch (e) {
           if (e.code == 'requires-recent-login') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('Please reauthenticate to change password.')),
+            displayCustomErrorMessage(
+              context,
+              'Please reauthenticate to change password',
             );
+            return;
           } else {
             devtools.log('Error updating password: ${e.message}');
+            displayCustomErrorMessage(
+              context,
+              'Failed to update password',
+            );
+            return;
           }
-          return; // Exit if password update fails
         }
       }
 
+      // String? imageUrl;
+      // Handle image upload if provided
       if (imageFile != null) {
-        String uniqueFileName = '$userId.webp';
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('profile_pictures/$uniqueFileName');
-        await storageRef.putFile(imageFile);
+        try {
+          String uniqueFileName = '$userId.webp';
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('profile_pictures/$uniqueFileName');
+          await storageRef.putFile(imageFile);
 
-        final imageBytes = await imageFile.readAsBytes();
-        await UserProfileMethods.saveImageLocally(imageBytes, uniqueFileName);
+          final imageBytes = await imageFile.readAsBytes();
+          await UserProfileMethods.saveImageLocally(imageBytes, uniqueFileName);
+        } catch (e) {
+          devtools.log('Error uploading image: $e');
+          displayCustomErrorMessage(
+            context,
+            'Failed to upload profile picture',
+          );
+          return;
+        }
       }
 
+      // Only update Firestore if all previous operations were successful
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'email': email,
         'phone': phone,
@@ -169,25 +201,24 @@ class UserProfileMethods {
         'password': password,
       });
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile updated successfully!')),
-        );
-      }
+      // If we reach here, everything was successful
       if (context.mounted) {
         Navigator.pop(context, true);
       }
     } catch (e) {
       devtools.log('Error updating profile: $e');
-      if (e is FirebaseAuthException && e.code == "requires-recent-login") {
-        rethrow;
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Failed to update profile. Please try again.')),
-          );
-        }
+      String errorMessage = 'Failed to update profile.';
+      if (e is FirebaseAuthException) {
+        errorMessage = switch (e.code) {
+          'email-already-in-use' => 'This email is already registered.',
+          'invalid-email' => 'Please enter a valid email address.',
+          'weak-password' => 'Password should be at least 6 characters.',
+          'requires-recent-login' => 'Please sign in again to make these changes.',
+          _ => e.message ?? errorMessage
+        };
+      }
+      if (context.mounted) {
+        displayCustomErrorMessage(context, errorMessage);
       }
     }
   }
