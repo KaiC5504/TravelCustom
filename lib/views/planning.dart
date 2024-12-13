@@ -425,7 +425,7 @@ class _PlanningViewState extends State<PlanningView> {
         devtools.log('API Response: $planText');
 
       
-        List<Map<String, dynamic>> generatedPlan = _parsePlanText(planText);
+        List<Map<String, dynamic>> generatedPlan = _formatText(planText);
 
         if (mounted) {
           setState(() {
@@ -434,7 +434,7 @@ class _PlanningViewState extends State<PlanningView> {
         }
 
        
-        await _saveGeneratedPlanToFirestore(generatedPlan);
+        await _saveAutoPlanToFirestore(generatedPlan);
       } else {
         final errorData = json.decode(response.body);
         final errorMessage = errorData['error']['message'];
@@ -451,7 +451,7 @@ class _PlanningViewState extends State<PlanningView> {
     }
   }
 
-  Future<void> _saveGeneratedPlanToFirestore(
+  Future<void> _saveAutoPlanToFirestore(
       List<Map<String, dynamic>> generatedPlan) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -467,7 +467,7 @@ class _PlanningViewState extends State<PlanningView> {
     });
   }
 
-  List<Map<String, dynamic>> _parsePlanText(String planText) {
+  List<Map<String, dynamic>> _formatText(String planText) {
     List<Map<String, dynamic>> parsedPlan = [];
     List<String> days = planText.split('\n\n');
 

@@ -37,7 +37,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
 
     if (widget.initialSubDestinationId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _openInitialSubDestinationDialog();
+        _openInitialDialog();
       });
     }
   }
@@ -54,7 +54,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
       // Open dialog for initial sub-destination
       if (widget.initialSubDestinationId != null && !_dialogOpened) {
         devtools.log('Opening initial subdes dialog');
-        _openInitialSubDestinationDialog();
+        _openInitialDialog();
       }
     } catch (e) {
       devtools.log('Error fetching sub-destinations: $e');
@@ -66,7 +66,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     }
   }
 
-  Future<void> _openInitialSubDestinationDialog() async {
+  Future<void> _openInitialDialog() async {
     if (_dialogOpened) return;
 
     final initialSubDes = _subDestinations.firstWhere(
@@ -77,7 +77,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     if (initialSubDes.isNotEmpty) {
       await _showSubDestinationDetails(
           context, initialSubDes, widget.fromLocationButton);
-      _dialogOpened = true; 
+      _dialogOpened = true;
     }
   }
 
@@ -100,14 +100,15 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   Future<void> _showSubDestinationDetails(BuildContext context,
       Map<String, dynamic> subDes, bool fromLocationButton) async {
     devtools.log('Opening details for sub-destination: ${subDes['id']}');
-    
+
     try {
-      await _destinationContent.incrementClickCount(widget.destinationId, subDes['id']);
+      await _destinationContent.incrementClickCount(
+          widget.destinationId, subDes['id']);
       devtools.log('Successfully called incrementClickCount');
     } catch (e) {
       devtools.log('Error calling incrementClickCount: $e');
     }
-    
+
     String authorName = await _getAuthorName(subDes['author'] ?? '');
 
     showDialog(
@@ -159,7 +160,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                               color: subDes['isFavourited'] ?? false
                                   ? const Color.fromARGB(255, 235, 211, 0)
                                   : Colors.grey,
-                              size: 30, 
+                              size: 30,
                             ),
                             onPressed: () async {
                               bool newFavouriteStatus =
