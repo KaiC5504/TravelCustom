@@ -51,7 +51,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
           _isLoadingSubDestinations = false;
         });
       }
-      // Open the dialog only after sub-destinations are fetched
+      // Open dialog for initial sub-destination
       if (widget.initialSubDestinationId != null && !_dialogOpened) {
         devtools.log('Opening initial subdes dialog');
         _openInitialSubDestinationDialog();
@@ -67,7 +67,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
   }
 
   Future<void> _openInitialSubDestinationDialog() async {
-    if (_dialogOpened) return; // Check if the dialog has already been opened
+    if (_dialogOpened) return;
 
     final initialSubDes = _subDestinations.firstWhere(
       (subDes) => subDes['id'] == widget.initialSubDestinationId,
@@ -77,12 +77,11 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     if (initialSubDes.isNotEmpty) {
       await _showSubDestinationDetails(
           context, initialSubDes, widget.fromLocationButton);
-      _dialogOpened = true; // Set the flag to true after the dialog is shown
+      _dialogOpened = true; 
     }
   }
 
   Future<String> _getAuthorName(String authorId) async {
-    // Call the getAuthorName method from DestinationContent
     return await _destinationContent.getAuthorName(authorId) ?? 'Unknown';
   }
 
@@ -111,7 +110,6 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
     
     String authorName = await _getAuthorName(subDes['author'] ?? '');
 
-    // Open the dialog first
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -161,7 +159,7 @@ class _SubDestinationsCardState extends State<SubDestinationsCard> {
                               color: subDes['isFavourited'] ?? false
                                   ? const Color.fromARGB(255, 235, 211, 0)
                                   : Colors.grey,
-                              size: 30, // Increase the size of the star
+                              size: 30, 
                             ),
                             onPressed: () async {
                               bool newFavouriteStatus =

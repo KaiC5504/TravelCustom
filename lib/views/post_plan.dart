@@ -42,7 +42,6 @@ class _PostPlanPageState extends State<PostPlanPage> {
       String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       if (userId.isEmpty) return;
 
-      // Fetch the user's travel plan
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('travel_plans')
           .where('userId', isEqualTo: userId)
@@ -75,13 +74,11 @@ class _PostPlanPageState extends State<PostPlanPage> {
     }
   }
 
-  // Fetch destination names and store them in destinationNames map
   Future<void> fetchDestinationNames(
       List<Map<String, dynamic>> activities) async {
     for (var activity in activities) {
       String destinationId = activity['destination'];
 
-      // Check if the destination looks like an ID and if we haven't fetched it already
       if (destinationId.isNotEmpty &&
           !destinationNames.containsKey(destinationId)) {
         try {
@@ -136,7 +133,6 @@ class _PostPlanPageState extends State<PostPlanPage> {
         return;
       }
 
-      // Get Doc and update name
       DocumentSnapshot travelPlanDoc = querySnapshot.docs.first;
       await travelPlanDoc.reference.update({'plan_name': planName});
       devtools.log('Updated plan_name in travel_plans collection');
@@ -148,14 +144,12 @@ class _PostPlanPageState extends State<PostPlanPage> {
       travelPlanData['post_date'] = Timestamp.now();
       travelPlanData['tags'] = _selectedTags;
 
-      // New Doc for platform_plans
       DocumentReference platformPlanDoc =
           FirebaseFirestore.instance.collection('platform_plans').doc();
       await platformPlanDoc.set(travelPlanData);
       devtools.log(
           'Copied travel plan to platform_plans with new document ID: ${platformPlanDoc.id}');
 
-      // Pop back to previous page after success
       Navigator.of(context).pop(true);
     } catch (e) {
       devtools.log('Error uploading plan: $e');
@@ -294,7 +288,6 @@ class _PostPlanPageState extends State<PostPlanPage> {
                                 children: [
                                   _buildMiniTimelineItem('Day $dayNumber'),
                                   SizedBox(height: 5),
-                                  // Day Title with Indicator
                                   Padding(
                                     padding: const EdgeInsets.only(
                                         left: 18.0, top: 4.0),
@@ -304,7 +297,6 @@ class _PostPlanPageState extends State<PostPlanPage> {
                                             fontSize: 16)),
                                   ),
                                   SizedBox(height: 3),
-                                  // List of side notes under each day
                                   ...sideNotes.map((note) => Padding(
                                         padding: const EdgeInsets.only(
                                             left: 18.0, top: 4.0, bottom: 4.0),
@@ -331,7 +323,6 @@ class _PostPlanPageState extends State<PostPlanPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Purple Indicator
           Container(
             width: 10,
             height: 10,
@@ -341,7 +332,6 @@ class _PostPlanPageState extends State<PostPlanPage> {
             ),
           ),
           SizedBox(width: 8),
-          // Title Text
           Expanded(
             child: Text(
               title,

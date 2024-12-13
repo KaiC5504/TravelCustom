@@ -15,6 +15,7 @@ import 'package:travelcustom/views/favourite_view.dart';
 import 'package:travelcustom/views/profile_edit.dart';
 import 'package:path/path.dart' as p;
 import 'package:travelcustom/views/statistic.dart';
+import 'package:travelcustom/views/planning.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -47,20 +48,18 @@ class _ProfilePageState extends State<ProfilePage> {
     return file.writeAsBytes(imageBytes);
   }
 
-  // Fetch user data from Firestore and save locally
   Future<void> fetchUserData() async {
     final User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final uid = user.uid;
 
-      // Fetch user document from Firestore
       final DocumentSnapshot userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (mounted) {
         setState(() {
           name = userDoc['name'];
-          role = userDoc['role']; // Fetch role from Firestore
+          role = userDoc['role'];
         });
       }
 
@@ -71,7 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Check cache first, then fetch and cache profile image if not available
+  // Check cache and fetch
   Future<void> fetchProfileImage(String uid,
       {bool forceRefresh = false}) async {
     try {
@@ -80,32 +79,31 @@ class _ProfilePageState extends State<ProfilePage> {
       Uint8List? imageBytes = await ref.getData(100000000);
 
       if (imageBytes != null) {
-        avatarBytes = imageBytes; // Update in-memory image
-        await saveImageLocally(imageBytes, '$uid.webp'); // Save to local cache
+        avatarBytes = imageBytes;
+        await saveImageLocally(imageBytes, '$uid.webp');
       }
     } catch (e) {
       devtools.log('Error fetching image: $e');
     }
   }
 
-  // Load user data from local storage
   Future<void> loadUserData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      name = prefs.getString('user_name'); // Load name from local storage
-      isLoading = false; // Data loaded
+      name = prefs.getString('user_name');
+      isLoading = false;
     });
   }
 
   Future<void> refreshProfileData() async {
-    await fetchUserData(); // Save name to local storage
+    await fetchUserData();
   }
 
   @override
   void initState() {
     super.initState();
-    loadUserData(); // Load data from local storage first
-    fetchUserData(); // Fetch latest data from Firestore if needed
+    loadUserData();
+    fetchUserData();
   }
 
   @override
@@ -113,7 +111,6 @@ class _ProfilePageState extends State<ProfilePage> {
     final User? user = FirebaseAuth.instance.currentUser;
 
     if (isLoading) {
-      // Show a loading indicator while data is being loaded
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -188,7 +185,6 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 const SizedBox(height: 30),
 
-                // Profile Image
                 Center(
                   child: CircleAvatar(
                     radius: 50,
@@ -207,7 +203,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 20),
 
-                // Display local name instantly if available
                 Center(
                   child: Column(
                     children: [
@@ -232,15 +227,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 8),
 
-                // Edit Profile Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor:
-                        const Color.fromARGB(255, 114, 114, 114), // Text color
+                    backgroundColor: const Color.fromARGB(255, 114, 114, 114),
                     side: const BorderSide(
-                        color: Color.fromARGB(255, 77, 77, 77), // Border color
-                        width: 2.0), // Increased border width
+                        color: Color.fromARGB(255, 77, 77, 77), width: 2.0),
                   ),
                   onPressed: () async {
                     final result = await Navigator.of(context).push(
@@ -249,7 +241,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     );
 
                     if (result == true) {
-                      await refreshProfileData(); // Refresh data after editing
+                      await refreshProfileData();
                     }
                   },
                   child: const Text(
@@ -260,11 +252,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 30),
 
-                // Menu Options
                 ListTile(
                   leading: const FaIcon(FontAwesomeIcons.map),
                   title: const Text('My Travelling Plan'),
-                  onTap: () {}, // Placeholder for future function
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PlanningView(),
+                      ),
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.favorite_outline),

@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, non_constant_identifier_names, library_private_types_in_public_api
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +72,7 @@ class _RegisterViewState extends State<RegisterView> {
           'name': '',
           'planId': planId,
           'favourites': [],
-          'role': _selectedRole, // Store role with proper capitalization
+          'role': _selectedRole, 
           'agencyCode': _selectedRole == 'Travel Agency' ? agencyCode : null,
         });
 
@@ -135,7 +135,7 @@ class _RegisterViewState extends State<RegisterView> {
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
             ),
           ),
-          //username textfield
+
           Center(
             child: Container(
               width: 300,
@@ -151,7 +151,6 @@ class _RegisterViewState extends State<RegisterView> {
             ),
           ),
 
-          //password textfield with show/hide password
           PasswordInput(
             PasswordController: _password,
           ),
@@ -184,7 +183,7 @@ class _RegisterViewState extends State<RegisterView> {
                   ),
                   filled: true,
                   fillColor:
-                      Colors.grey[200], // Match email and password background
+                      Colors.grey[200], 
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
                   constraints: BoxConstraints.tight(const Size.fromHeight(60)),
@@ -193,7 +192,7 @@ class _RegisterViewState extends State<RegisterView> {
                 dropdownColor: Colors.white,
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
                 isExpanded: true,
-                menuMaxHeight: 300, // Ensure the dropdown menu appears lower
+                menuMaxHeight: 300, 
               ),
             ),
           ),
@@ -212,7 +211,7 @@ class _RegisterViewState extends State<RegisterView> {
                     ),
                     filled: true,
                     fillColor:
-                        Colors.grey[200], // Match email and password background
+                        Colors.grey[200], 
                     contentPadding: const EdgeInsets.symmetric(
                         vertical: 15, horizontal: 10),
                     constraints:
@@ -223,7 +222,6 @@ class _RegisterViewState extends State<RegisterView> {
               ),
             ),
 
-          //register button
           ElevatedButton(
             onPressed: _registerUser,
             style: ElevatedButton.styleFrom(
@@ -251,14 +249,12 @@ class _RegisterViewState extends State<RegisterView> {
 }
 
 class PasswordInput extends StatefulWidget {
-  // ignore: non_constant_identifier_names
+  
   final TextEditingController PasswordController;
 
-  // ignore: non_constant_identifier_names
   const PasswordInput({super.key, required this.PasswordController});
 
   @override
-  // ignore: library_private_types_in_public_api
   _PasswordInputState createState() => _PasswordInputState();
 }
 

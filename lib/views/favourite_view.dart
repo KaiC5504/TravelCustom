@@ -29,7 +29,6 @@ class _FavouritePageState extends State<FavouritePage> {
     _favouritesFuture = _getFavourites();
   }
 
-  // Method to retrieve the favourite destinations from Firestore
   Future<List<Map<String, dynamic>>> _getFavourites() async {
     List<Map<String, dynamic>> favouriteDestinations = [];
     String? userId = FirebaseAuth.instance.currentUser?.uid;
@@ -43,11 +42,9 @@ class _FavouritePageState extends State<FavouritePage> {
       if (userDoc.exists && userDoc['favourites'] != null) {
         List<dynamic> favourites = userDoc['favourites'];
 
-        // Get all destinations first
         QuerySnapshot destinationsSnapshot =
             await FirebaseFirestore.instance.collection('destinations').get();
 
-        // For each destination, check its sub_destinations
         for (var destinationDoc in destinationsSnapshot.docs) {
           for (String subDestinationId in favourites) {
             try {
@@ -124,7 +121,6 @@ class _FavouritePageState extends State<FavouritePage> {
 
                 return GestureDetector(
                   onTap: () async {
-                    // Navigate to the detailed page when tapped
                     await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => DestinationDetailPage(
@@ -133,7 +129,7 @@ class _FavouritePageState extends State<FavouritePage> {
                         ),
                       ),
                     );
-                    //Reload widget
+
                     setState(() {
                       _loadFavourites();
                     });
@@ -170,7 +166,6 @@ class _FavouritePageState extends State<FavouritePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            // Additional destination details can be added here
                           ],
                         ),
                       ),

@@ -59,10 +59,8 @@ class _PlatformPageState extends State<PlatformPage> {
 
   Future<void> _fetchPlanPosts() async {
     try {
-      // Fetch plan data from DestinationService
       final data = await _platformPostsContent.fetchPlanPosts();
 
-      // Update the state with plan data
       setState(() {
         planPosts = data['planPosts'];
         planProfilePictures = data['profilePictures'];
@@ -139,10 +137,8 @@ class _PlatformPageState extends State<PlatformPage> {
         children: [
           Column(
             children: [
-              // Toggle buttons for Destinations and Plans
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center, // Center the whole row
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Padding(
@@ -195,7 +191,7 @@ class _PlatformPageState extends State<PlatformPage> {
                           .withOpacity(0.1),
                       spreadRadius: 2,
                       blurRadius: 4,
-                      offset: Offset(0, 1), // changes position of shadow
+                      offset: Offset(0, 1),
                     ),
                   ],
                 ),
@@ -207,8 +203,6 @@ class _PlatformPageState extends State<PlatformPage> {
               ),
             ],
           ),
-
-          // Posting button
           Positioned(
             bottom: 0,
             left: MediaQuery.of(context).size.width / 2 - 140 / 2,
@@ -242,13 +236,13 @@ class _PlatformPageState extends State<PlatformPage> {
                   top: Radius.circular(45),
                 ),
                 splashColor: Color.fromARGB(255, 91, 91, 91).withOpacity(0.2),
-                highlightColor: Color.fromARGB(255, 91, 91, 91)
-                    .withOpacity(0.2), // Highlight color when pressed
+                highlightColor:
+                    Color.fromARGB(255, 91, 91, 91).withOpacity(0.2),
                 child: Hero(
-                  tag: 'platform_add_button', 
+                  tag: 'platform_add_button',
                   child: Container(
                     width: 140,
-                    height: 39, // Half the height for a semi-circle
+                    height: 39,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(
@@ -295,7 +289,8 @@ class _PlatformPageState extends State<PlatformPage> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => DestinationDetailPage(
-                                destinationId: post['destinationId'], subdestinationId: post['subDestinationId'],
+                                destinationId: post['destinationId'],
+                                subdestinationId: post['subDestinationId'],
                               ),
                             ),
                           );
@@ -325,7 +320,8 @@ class _PlatformPageState extends State<PlatformPage> {
                                   SizedBox(width: 5.0),
                                   Text(
                                     '(${post['authorRole']})',
-                                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 12.0),
                                   ),
                                   Spacer(),
                                   Text(
@@ -414,7 +410,7 @@ class _PlatformPageState extends State<PlatformPage> {
                                     backgroundImage: profilePicture != null
                                         ? MemoryImage(profilePicture)
                                         : null,
-                                        backgroundColor: Colors.grey[300],
+                                    backgroundColor: Colors.grey[300],
                                     child: profilePicture == null
                                         ? Icon(Icons.person)
                                         : null,
@@ -428,7 +424,8 @@ class _PlatformPageState extends State<PlatformPage> {
                                   SizedBox(width: 5.0),
                                   Text(
                                     '(${post['authorRole']})',
-                                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 12.0),
                                   ),
                                   Spacer(),
                                   Text(
@@ -449,7 +446,6 @@ class _PlatformPageState extends State<PlatformPage> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Display day titles and side notes for each day
                                   for (var i = 0;
                                       i < (days.length > 3 ? 3 : days.length);
                                       i++)

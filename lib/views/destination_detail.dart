@@ -27,7 +27,6 @@ class DestinationDetailPage extends StatefulWidget {
 class _DestinationDetailPageState extends State<DestinationDetailPage> {
   final DestinationContent _destinationContent = DestinationContent();
   final ValueNotifier<bool> _isFavoritedNotifier = ValueNotifier<bool>(false);
-  // bool _interactionRecorded = false;
   Map<String, Uint8List?> destinationImages = {};
   Uint8List? destinationImageData;
   final ValueNotifier<int> _reviewCountNotifier = ValueNotifier<int>(0);
@@ -42,10 +41,10 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
   }
 
   void _fetchDestinationImage() async {
-    // Fetch the image data from Firebase
+   
     destinationImageData =
         await _destinationContent.getDestinationImage(widget.destinationId);
-    setState(() {}); // Trigger a rebuild to display the image
+    setState(() {}); 
   }
 
   Future<void> _checkIfFavourited() async {
@@ -70,13 +69,13 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
 
   void _handleAddToPlan(String subDestinationName) {
     if (widget.fromLocationButton) {
-      // Log the intention to pop and return data to SearchPage
+     
       devtools.log(
           'PPP Returning subDestinationName: $subDestinationName to SearchPage');
       Navigator.pop(context, subDestinationName);
       Navigator.pop(context, subDestinationName);
     } else {
-      // Fetch sub-destination details and track interaction
+      
       _destinationContent.getSubDestinationDetails(widget.destinationId, subDestinationName).then((subDestinationData) {
         trackUserViewInteraction(subDestinationData);
       });
@@ -114,7 +113,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                           index < rating ? Icons.star : Icons.star_border,
                           color:
                               index < rating ? Colors.amber[600] : Colors.grey,
-                          size: 40.0, // Make the stars bigger
+                          size: 40.0, 
                         ),
                         onPressed: () {
                           setState(() {
@@ -159,7 +158,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                       reviewController.text,
                     );
                     Navigator.of(context).pop();
-                    setState(() {}); // Refresh the page to show the new review
+                    setState(() {}); 
                     _reviewsWidgetKey.currentState?.refreshReviews();
                   },
                   child: const Text('Submit'),
@@ -222,7 +221,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                     children: [
                       Align(
                         alignment:
-                            Alignment.topLeft, // Align the text to the top left
+                            Alignment.topLeft,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
@@ -236,7 +235,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                           ),
                         ),
                       ),
-                      // Remove the favorite button from here
+                     
                     ],
                   ),
                 ),
@@ -250,7 +249,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                 ),
                 const SizedBox(height: 13),
 
-                // Horizontal Scrollable Reviews Section
+                
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: Column(
@@ -268,7 +267,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                         destinationContent: _destinationContent,
                         onReviewsLoaded: (reviewCount) {
                           _reviewCountNotifier.value =
-                              reviewCount; // Directly update the ValueNotifier
+                              reviewCount; 
                         },
                       ),
                     ],
@@ -350,7 +349,7 @@ class _DestinationDetailPageState extends State<DestinationDetailPage> {
                     onPressed: _showReviewDialog,
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      backgroundColor: Colors.grey[800], // Text color
+                      backgroundColor: Colors.grey[800], 
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -440,7 +439,7 @@ class AuthorNameWidget extends StatelessWidget {
       future: _fetchAuthorName(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator(); // Loading indicator
+          return CircularProgressIndicator(); 
         }
         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
           return Text('Unknown');
@@ -504,7 +503,7 @@ class ReviewsWidgetState extends State<ReviewsWidget> {
 
         final reviews = snapshot.data!;
         return SizedBox(
-          height: 120, // Set height for the review cards
+          height: 120, 
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: reviews.length,

@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:travelcustom/views/destination_detail.dart';
-import 'dart:developer' as devtools show log; 
+import 'dart:developer' as devtools show log;
 
 class SearchPage extends StatefulWidget {
   final bool fromLocationButton;
-  final List<String> initialTags; // Add initialTags parameter
+  final List<String> initialTags;
   const SearchPage(
       {super.key,
       this.fromLocationButton = false,
@@ -26,13 +26,12 @@ class _SearchPageState extends State<SearchPage> {
   Timer? _debounce;
   bool _isLoading = true;
 
-  // Local list to store the fetched destinations
   List<Map<String, dynamic>> localDestination = [];
   Map<String, Uint8List?> destinationImages = {};
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   List<String> selectedTags = [];
-  List<String> availableTags = [
+  List<String> tags = [
     'Urban',
     'Nightlife',
     'History',
@@ -46,7 +45,7 @@ class _SearchPageState extends State<SearchPage> {
   ];
 
   RangeValues _selectedBudgetRange = const RangeValues(0, 1000);
-  bool _isBudgetFilterActive = false;
+  bool _budgetFilter = false;
 
   @override
   void initState() {
@@ -62,7 +61,6 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _fetchDestinations() async {
-    devtools.log('Starting to fetch destinations');
     setState(() {
       _isLoading = true;
     });
@@ -138,8 +136,6 @@ class _SearchPageState extends State<SearchPage> {
         setState(() {
           localDestination = fetchedDestinations;
           _isLoading = false;
-          devtools.log(
-              'Successfully loaded ${localDestination.length} destinations');
         });
       }
     } catch (e) {
@@ -173,7 +169,7 @@ class _SearchPageState extends State<SearchPage> {
     List<Map<String, dynamic>> filteredList = [];
 
     // Apply filters
-    if (searchQuery.isEmpty && selectedTags.isEmpty && !_isBudgetFilterActive) {
+    if (searchQuery.isEmpty && selectedTags.isEmpty && !_budgetFilter) {
       filteredList = List.from(localDestination);
     } else {
       String normalizedQuery = _normalizeQuery(searchQuery);
@@ -183,7 +179,7 @@ class _SearchPageState extends State<SearchPage> {
         bool matchesTags = selectedTags.isEmpty ||
             selectedTags
                 .any((tag) => destination['tags']?.contains(tag) ?? false);
-        bool matchesBudget = !_isBudgetFilterActive ||
+        bool matchesBudget = !_budgetFilter ||
             (destination['estimate_cost'] >= _selectedBudgetRange.start &&
                 destination['estimate_cost'] <= _selectedBudgetRange.end);
         return matchesQuery && matchesTags && matchesBudget;
@@ -215,7 +211,7 @@ class _SearchPageState extends State<SearchPage> {
               title: Text('Select Tags'),
               content: SingleChildScrollView(
                 child: ListBody(
-                  children: availableTags.map((String tag) {
+                  children: tags.map((String tag) {
                     return CheckboxListTile(
                       value: tempSelectedTags.contains(tag),
                       title: Text(tag),
@@ -247,7 +243,7 @@ class _SearchPageState extends State<SearchPage> {
                       devtools.log('Applied Tags: $selectedTags');
                     });
                     Navigator.of(context).pop();
-                    _applyFilters(); // Ensure the filter is applied
+                    _applyFilters();
                   },
                 ),
               ],
@@ -295,7 +291,7 @@ class _SearchPageState extends State<SearchPage> {
                   onPressed: () {
                     this.setState(() {
                       _selectedBudgetRange = const RangeValues(0, 1000);
-                      _isBudgetFilterActive = false;
+                      _budgetFilter = false;
                     });
                     Navigator.of(context).pop();
                   },
@@ -305,7 +301,7 @@ class _SearchPageState extends State<SearchPage> {
                   onPressed: () {
                     this.setState(() {
                       _selectedBudgetRange = tempBudgetRange;
-                      _isBudgetFilterActive = true;
+                      _budgetFilter = true;
                     });
                     Navigator.of(context).pop();
                   },
@@ -337,8 +333,6 @@ class _SearchPageState extends State<SearchPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
-
-            // Search bar
             TextField(
               decoration: InputDecoration(
                 hintText: 'Search for a destination...',
@@ -349,10 +343,7 @@ class _SearchPageState extends State<SearchPage> {
               ),
               onChanged: _onSearchChanged,
             ),
-
             const SizedBox(height: 20),
-
-            // Filter and Sort Buttons with PopupMenuButton
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -374,7 +365,6 @@ class _SearchPageState extends State<SearchPage> {
                       value: 'Budget',
                       child: Text('Filter by Budget'),
                     ),
-                    // Add other filter options here if needed
                   ],
                   color: const Color(0xFFD4EAF7),
                   position: PopupMenuPosition.under,
@@ -401,7 +391,6 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   ),
                 ),
-                // Sort By Button
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     setState(() {
@@ -450,9 +439,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
-
             Center(
               child: Column(
                 children: [
@@ -470,7 +457,7 @@ class _SearchPageState extends State<SearchPage> {
                         fontSize: 14,
                       ),
                     ),
-                  if (_isBudgetFilterActive)
+                  if (_budgetFilter)
                     Text(
                       'Budget: RM${_selectedBudgetRange.start.round()} - RM${_selectedBudgetRange.end.round()}',
                       style: const TextStyle(fontSize: 14),
@@ -478,10 +465,7 @@ class _SearchPageState extends State<SearchPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 10),
-
-            // ListView to display local data
             _isLoading
                 ? Expanded(
                     child: Center(

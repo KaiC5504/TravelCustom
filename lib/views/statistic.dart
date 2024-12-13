@@ -16,20 +16,19 @@ class _StatisticPageState extends State<StatisticPage> {
   Map<String, Uint8List?> destinationImages = {};
 
   Future<List<DocumentSnapshot>> _getAllSubDestinations() async {
-    // Get all destination documents
     QuerySnapshot destinationsSnapshot =
         await FirebaseFirestore.instance.collection('destinations').get();
 
     List<DocumentSnapshot> allSubDestinations = [];
 
-    // For each destination, get its sub_destinations
+    // get sub destinations
     for (var destination in destinationsSnapshot.docs) {
       QuerySnapshot subDestinationsSnapshot =
           await destination.reference.collection('sub_destinations').get();
       allSubDestinations.addAll(subDestinationsSnapshot.docs);
     }
 
-    // Sort by click_count in descending order
+    // Sort by click count in descending order
     allSubDestinations.sort((a, b) {
       final clickCountA =
           (a.data() as Map<String, dynamic>)['click_count'] ?? 0;

@@ -37,12 +37,10 @@ class _TravelViewState extends State<TravelView> {
       return [];
     }
 
-    // Step 2: Fetch the preferred tags from the interaction collection
     List<String> preferredTags =
         await fetchPreferredTags(userId);
 
     if (preferredTags.isEmpty) {
-      // If no preferred tags are found, return empty list and print a message
       devtools.log("No preferred tags found in interactions");
       return [];
     }
@@ -66,7 +64,6 @@ class _TravelViewState extends State<TravelView> {
         .where('user_id', isEqualTo: userId)
         .get();
 
-    // Loop document
     for (var doc in interactionSnapshot.docs) {
       var interactionData = doc.data() as Map<String, dynamic>;
 
@@ -105,26 +102,26 @@ class _TravelViewState extends State<TravelView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 60), // Increased top padding
+              const SizedBox(height: 60),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
                     icon: Icon(Icons.menu,
-                        color: Colors.black, size: 30), // Increased size
+                        color: Colors.black, size: 30),
                     onPressed: () {
-                      // Handle menu button press
+
                     },
                   ),
                   Row(
                     children: [
                       Icon(Icons.location_on,
-                          color: Colors.red, size: 30), // Increased size
+                          color: Colors.red, size: 30),
                       const SizedBox(width: 5),
                       Text(
                         'Malaysia',
                         style: TextStyle(
-                          fontSize: 18, // Increased font size
+                          fontSize: 18, 
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
@@ -133,7 +130,7 @@ class _TravelViewState extends State<TravelView> {
                   ),
                   IconButton(
                     icon: Icon(Icons.search,
-                        color: Colors.black, size: 30), // Increased size
+                        color: Colors.black, size: 30), 
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -326,8 +323,8 @@ class _TravelViewState extends State<TravelView> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(30), // Oval shape
-          border: Border.all(color: color, width: 1), // Light border
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: color, width: 1), 
           boxShadow: [
             BoxShadow(
               color: Colors.black12,
@@ -339,17 +336,17 @@ class _TravelViewState extends State<TravelView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 30), // Icon at the top center
-            const SizedBox(height: 5), // Spacing between icon and text
+            Icon(icon, color: color, size: 30), 
+            const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
                 color: color,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Sans-serif', // Clean, rounded, and sans-serif font
+                fontFamily: 'Sans-serif', 
               ),
-              textAlign: TextAlign.center, // Centered text
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -362,9 +359,9 @@ class _TravelViewState extends State<TravelView> {
       onTap: () {
         devtools.log(destinationData.toString());
         String destinationId =
-            destinationData['destinationId'] ?? ''; // Main destination ID
+            destinationData['destinationId'] ?? ''; 
         String subdestinationId =
-            destinationData['id'] ?? ''; // Sub-destination ID
+            destinationData['id'] ?? ''; 
         if (destinationId.isNotEmpty && subdestinationId.isNotEmpty) {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -392,7 +389,7 @@ class _TravelViewState extends State<TravelView> {
                   destinationData['image'].isNotEmpty
               ? DecorationImage(
                   image:
-                      NetworkImage(destinationData['image']), // Updated field
+                      NetworkImage(destinationData['image']), 
                   fit: BoxFit.cover,
                 )
               : null,
@@ -411,7 +408,7 @@ class _TravelViewState extends State<TravelView> {
                   ),
                 ),
                 child: Text(
-                  destinationData['name'] ?? 'No Destination', // Updated field
+                  destinationData['name'] ?? 'No Destination', 
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -425,7 +422,7 @@ class _TravelViewState extends State<TravelView> {
               top: 10,
               right: 10,
               child:
-                  Icon(Icons.star, color: Colors.white), // Changed to star icon
+                  Icon(Icons.star, color: Colors.white),
             ),
           ],
         ),
@@ -530,7 +527,6 @@ Future<List<Map<String, dynamic>>> fetchRecommendedDestinations(
     return [];
   }
 
-  // Get highest preference interaction
   var highestPreference = interactionSnapshot.docs.first;
   var interactionData =
       highestPreference.data() as Map<String, dynamic>;

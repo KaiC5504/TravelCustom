@@ -10,7 +10,6 @@ import 'package:travelcustom/views/profile_view.dart';
 import 'package:travelcustom/views/register_view.dart';
 import 'package:travelcustom/views/search_view.dart';
 import 'package:travelcustom/views/travel_main.dart';
-import 'package:travelcustom/views/travel_plan_view.dart';
 import 'package:get/get.dart';
 
 void main() async {
@@ -91,12 +90,6 @@ class MyApp extends StatelessWidget {
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: planRoute, 
-          page: () => const TravelPlanView(),
-          preventDuplicates: true,
-          transition: Transition.noTransition,
-        ),
-        GetPage(
           name: favouriteRoute, 
           page: () => const FavouritePage(),
           preventDuplicates: true,
@@ -116,7 +109,6 @@ class MyApp extends StatelessWidget {
 class NavigationMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
-    // Preserve arguments when redirecting
     if (route == '/home' && Get.arguments != null) {
       return RouteSettings(
         name: route,
@@ -127,8 +119,6 @@ class NavigationMiddleware extends GetMiddleware {
   }
 }
 
-// Remove or modify HomePage class since it's no longer needed
-// If you keep it, modify it to return CustomBottomNavigationBar directly:
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 

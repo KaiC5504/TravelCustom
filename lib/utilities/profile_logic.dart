@@ -12,7 +12,7 @@ import 'dart:developer' as devtools show log;
 import 'package:travelcustom/utilities/display_error.dart';
 
 class UserProfileMethods {
-  // Retrieve cached image if it exists
+  
   static Future<File?> getCachedImage(String imageName) async {
     final directory = await getApplicationDocumentsDirectory();
     final path = p.join(directory.path, imageName);
@@ -20,7 +20,7 @@ class UserProfileMethods {
     return await file.exists() ? file : null;
   }
 
-  // Save image to local storage
+  
   static Future<File> saveImageLocally(
       Uint8List imageBytes, String imageName) async {
     final directory = await getApplicationDocumentsDirectory();
@@ -29,7 +29,7 @@ class UserProfileMethods {
     return file.writeAsBytes(imageBytes);
   }
 
-  // Update `getAvatarForProfile` to check the cache first
+  
   static Future<Uint8List?> getAvatarForProfile(String userId) async {
     File? cachedImage = await getCachedImage('$userId.webp');
     if (cachedImage != null) {
@@ -54,7 +54,7 @@ class UserProfileMethods {
 
   static Future<void> loadUserData({
     required String? userId,
-    required BuildContext context,  // Add this parameter
+    required BuildContext context,  
     required Function(String, String, String, String, String, Uint8List?)
         onDataLoaded,
   }) async {
@@ -126,7 +126,7 @@ class UserProfileMethods {
     try {
       User? user = FirebaseAuth.instance.currentUser;
 
-      // Handle email update if changed
+      
       if (user != null && user.email != email && email != currentEmail) {
         try {
           await user.updateEmail(email);
@@ -148,7 +148,6 @@ class UserProfileMethods {
         }
       }
 
-      // Handle password update if changed
       if (user != null && password != currentPassword) {
         try {
           await user.updatePassword(password);
@@ -170,8 +169,6 @@ class UserProfileMethods {
         }
       }
 
-      // String? imageUrl;
-      // Handle image upload if provided
       if (imageFile != null) {
         try {
           String uniqueFileName = '$userId.webp';
@@ -192,7 +189,7 @@ class UserProfileMethods {
         }
       }
 
-      // Only update Firestore if all previous operations were successful
+    
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'email': email,
         'phone': phone,
@@ -201,7 +198,7 @@ class UserProfileMethods {
         'password': password,
       });
 
-      // If we reach here, everything was successful
+      
       if (context.mounted) {
         Navigator.pop(context, true);
       }

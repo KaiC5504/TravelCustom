@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, non_constant_identifier_names, library_private_types_in_public_api
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -69,7 +69,7 @@ class _LoginViewState extends State<LoginView> {
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
             ),
           ),
-          //username textfield
+
           Center(
             child: Container(
               width: 300,
@@ -86,12 +86,12 @@ class _LoginViewState extends State<LoginView> {
             ),
           ),
 
-          //password textfield with show/hide password
+          
           PasswordInput(
             PasswordController: _password,
           ),
 
-          //register button
+       
           ElevatedButton(
             onPressed: () async {
               final usernameOrEmail = _usernameOrEmail.text;
@@ -177,14 +177,14 @@ class _LoginViewState extends State<LoginView> {
 }
 
 class PasswordInput extends StatefulWidget {
-  // ignore: non_constant_identifier_names
+ 
   final TextEditingController PasswordController;
 
-  // ignore: non_constant_identifier_names
+
   const PasswordInput({super.key, required this.PasswordController});
 
   @override
-  // ignore: library_private_types_in_public_api
+ 
   _PasswordInputState createState() => _PasswordInputState();
 }
 

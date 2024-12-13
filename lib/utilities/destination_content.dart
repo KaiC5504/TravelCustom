@@ -111,7 +111,7 @@ class DestinationContent {
           .doc(destinationId)
           .collection('sub_destinations')
           .orderBy('post_date',
-              descending: true) // Sort by post_date in descending order
+              descending: true) 
           .get();
 
       devtools.log('Sub-destinations fetched successfully');
@@ -158,7 +158,7 @@ class DestinationContent {
           .limit(10)
           .get();
 
-      // Convert the documents to a list of maps for easier usage
+      
       devtools.log('Reviews fetched successfully');
       return reviewsSnapshot.docs.map((doc) => doc.data()).toList();
     } catch (e) {
@@ -196,7 +196,7 @@ class DestinationContent {
         List<String> subDestinationTypes =
             List<String>.from(subDestinationData['tags']);
 
-        // Call trackUserInteraction from content_filter.dart
+       
         await trackUserInteraction(
             userId, subDestinationId, subDestinationTypes, 'view');
       } else {
@@ -236,7 +236,6 @@ class DestinationContent {
       return;
     }
 
-    // Trim spaces at the end and remove excess rows
     reviewContent = reviewContent.trimRight();
     reviewContent = reviewContent.replaceAll(RegExp(r'\n\s*\n'), '\n');
 

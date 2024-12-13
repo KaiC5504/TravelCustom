@@ -32,7 +32,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
   @override
   void initState() {
     super.initState();
-    _fetchStates(); // Fetch states when the widget is initialized
+    _fetchStates();
   }
 
   Future<void> _pickImage() async {
@@ -42,7 +42,6 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
     if (pickedFile != null) {
       File imageFile = File(pickedFile.path);
 
-      // Check if the file exists to prevent errors
       if (!(await imageFile.exists())) {
         devtools.log('File does not exist: ${imageFile.path}');
         return;
@@ -52,33 +51,26 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
       int fileSize = await imageFile.length();
       devtools.log('File size: ${fileSize / (1024 * 1024)} MB');
 
-      // Only compress if the file is larger than 100 KB
       if (fileSize > maxSizeInBytes) {
         int quality;
 
         if (fileSize <= 0.5 * 1024 * 1024) {
           quality = 40;
         } else if (fileSize <= 1 * 1024 * 1024) {
-          // 1 MB or less
           quality = 80;
         } else if (fileSize <= 2 * 1024 * 1024) {
-          // 1 MB - 2 MB
           quality = 75;
         } else if (fileSize <= 3 * 1024 * 1024) {
-          // 2 MB - 3 MB
           quality = 87;
         } else if (fileSize <= 4 * 1024 * 1024) {
-          // 3 MB - 4 MB
           quality = 80;
         } else if (fileSize <= 18 * 1024 * 1024) {
-          // 4 MB - 18 MB
           quality = 40;
         } else {
           quality = 30;
         }
 
         try {
-          // Compress and convert to WEBP
           final Uint8List? compressedImage =
               await FlutterImageCompress.compressWithFile(
             imageFile.path,
@@ -103,11 +95,6 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
         }
       }
 
-      // Log final file size after conditional compression
-      int finalSize = await imageFile.length();
-      devtools.log(
-          'File size after conditional compression (if applied): ${finalSize / (1024 * 1024)} MB');
-
       setState(() {
         _image = imageFile;
       });
@@ -121,9 +108,8 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
       final snapshot =
           await FirebaseFirestore.instance.collection('destinations').get();
       setState(() {
-        states = snapshot.docs
-            .map((doc) => doc['destination'] as String) // Extract state names
-            .toList();
+        states =
+            snapshot.docs.map((doc) => doc['destination'] as String).toList();
       });
     } catch (e) {
       devtools.log('Error fetching states: $e');
@@ -139,7 +125,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(16.0),
-          height: 450, // Adjust height to control visible items
+          height: 450,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -158,7 +144,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                         setState(() {
                           selectedState = states[index];
                         });
-                        Navigator.pop(context); // Close the modal
+                        Navigator.pop(context);
                       },
                     );
                   },
@@ -220,14 +206,12 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
       await subDestinationRef.set(subDestinationData);
       devtools.log('Destination uploaded successfully');
 
-      // Upload image to Firebase Storage
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('destination_images/${subDestinationRef.id}.webp');
       await storageRef.putFile(_image!);
       final imageUrl = await storageRef.getDownloadURL();
 
-      // Update destination document with image URL
       await subDestinationRef.update({
         'image': imageUrl,
       });
@@ -288,7 +272,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
                   borderRadius: BorderRadius.circular(10.0),
                   image: _image != null
                       ? DecorationImage(
-                          image: FileImage(_image!), // No key needed here
+                          image: FileImage(_image!),
                           fit: BoxFit.cover,
                         )
                       : null,
@@ -393,7 +377,7 @@ class _PostDestinationPageState extends State<PostDestinationPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12.0, vertical: 16.0),
-                width: MediaQuery.of(context).size.width * 0.6, // Adjust width
+                width: MediaQuery.of(context).size.width * 0.6,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12.0),

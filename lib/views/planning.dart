@@ -62,7 +62,7 @@ class _PlanningViewState extends State<PlanningView> {
       _dataInitialized = true;
     });
 
-    // Only show dialog after data is initialized
+   
     if (_dataInitialized && widget.showAddDayDialog && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         int nextDayNumber = activities.length + 1;
@@ -141,7 +141,7 @@ class _PlanningViewState extends State<PlanningView> {
   }
 
   Future<void> _addDay({String? initialSideNote, int? forcedDayNumber}) async {
-    // Use forcedDayNumber if provided, otherwise calculate based on current activities
+   
     int newDayNumber = forcedDayNumber ?? activities.length + 1;
     TextEditingController dayTitleController = TextEditingController();
     List<String> newSideNotes = [];
@@ -200,7 +200,7 @@ class _PlanningViewState extends State<PlanningView> {
                         Text('Add Locations or Side Notes'),
                         SizedBox(height: 10),
 
-                        // Scrollable container for side notes
+                        
                         SizedBox(
                           height: 150,
                           child: SingleChildScrollView(
@@ -257,7 +257,7 @@ class _PlanningViewState extends State<PlanningView> {
                           children: [
                             ElevatedButton(
                               onPressed: () async {
-                                // Navigate to location search page (to be implemented)
+                               
                                 final location = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -308,7 +308,7 @@ class _PlanningViewState extends State<PlanningView> {
                                     newDayNumber, dayTitle, newSideNotes);
                                 Navigator.of(context).pushNamedAndRemoveUntil(
                                     naviRoute, (Route<dynamic> route) => false);
-                                await fetchTravelPlanDetails(); // Refresh the plan view
+                                await fetchTravelPlanDetails(); 
                               },
                               child: Text('Add'),
                             ),
@@ -424,7 +424,7 @@ class _PlanningViewState extends State<PlanningView> {
 
         devtools.log('API Response: $planText');
 
-        // Parse the planText into a structured format
+      
         List<Map<String, dynamic>> generatedPlan = _parsePlanText(planText);
 
         if (mounted) {
@@ -433,7 +433,7 @@ class _PlanningViewState extends State<PlanningView> {
           });
         }
 
-        // Save the generated plan to Firestore
+       
         await _saveGeneratedPlanToFirestore(generatedPlan);
       } else {
         final errorData = json.decode(response.body);
@@ -558,7 +558,7 @@ class _PlanningViewState extends State<PlanningView> {
                 ),
                 TextButton(
                   onPressed: () async {
-                    // Add validation
+                   
                     if (rating == 0) {
                       displayCustomErrorMessage(
                         context,
@@ -651,7 +651,7 @@ class _PlanningViewState extends State<PlanningView> {
                         SizedBox(height: 30),
                         Text('Add Locations or Side Notes'),
                         SizedBox(height: 10),
-                        // Scrollable container for side notes
+                       
                         SizedBox(
                           height: 150,
                           child: SingleChildScrollView(
@@ -906,7 +906,7 @@ class _PlanningViewState extends State<PlanningView> {
                       )
                     : ListView(
                         children: [
-                          // Only show reviews section for platform plans
+                          
                           if (widget.collectionName == 'platform_plans') ...[
                             const Text(
                               "Recent Reviews: ",
@@ -925,7 +925,7 @@ class _PlanningViewState extends State<PlanningView> {
                             ),
                             const SizedBox(height: 50),
                           ],
-                          // Existing plan days
+                        
                           ...List.generate(
                             activities.length,
                             (index) {
@@ -1058,7 +1058,7 @@ class _PlanningViewState extends State<PlanningView> {
                         onTap: () {
                           Navigator.pop(context);
                           _editDay(index,
-                              activities[index]); // Pass the full day data
+                              activities[index]); 
                         },
                       ),
                       ListTile(

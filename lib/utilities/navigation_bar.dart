@@ -14,29 +14,24 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use Get.find instead of Get.put to use existing controller
     final controller = Get.find<NavigationController>();
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
       bottomNavigationBar: Obx(
         () => Padding(
-          padding: const EdgeInsets.only(
-              bottom: 20.0,
-              left: 20.0,
-              right: 20.0), // Add padding for floating effect
+          padding: const EdgeInsets.only(bottom: 20.0, left: 20.0, right: 20.0),
           child: Container(
             height: 70,
             decoration: BoxDecoration(
-              color:
-                  const Color.fromARGB(255, 56, 56, 56), // Set background color
-              borderRadius: BorderRadius.circular(30), // Rounded corners
+              color: const Color.fromARGB(255, 56, 56, 56),
+              borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3), // Shadow color
+                  color: Colors.black.withOpacity(0.3),
                   spreadRadius: 5,
                   blurRadius: 15,
-                  offset: Offset(0, 5), // Shadow position
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
@@ -103,7 +98,6 @@ class NavigationController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // Add listener for route arguments
     ever(selectedIndex, (index) {
       if (Get.arguments != null) {
         bool showDialog = Get.arguments['showAddDayDialog'] ?? false;
@@ -113,9 +107,9 @@ class NavigationController extends GetxController {
             showAddDayDialog: true,
             initialSideNote: sideNote,
           );
-          // Clear the arguments by navigating without arguments
+
           Get.offAllNamed('/home');
-          // Reset the screen after a short delay
+
           Future.delayed(const Duration(milliseconds: 100), () {
             screens[2] = PlanningView(
               showAddDayDialog: false,
@@ -144,27 +138,24 @@ class NavigationController extends GetxController {
   }
 
   void changeTab(int index) {
-    if (index == selectedIndex.value) return; // Don't navigate if already on the tab
-    
+    if (index == selectedIndex.value) return;
+
     selectedIndex.value = index;
-    // Only handle navigation for non-plan routes
+
     if (!Get.currentRoute.startsWith(planRoute)) {
       Get.until((route) => route.isFirst);
     }
   }
 
-  // Add this method for handling plan navigation
   void navigateToPlan({bool showDialog = false, String? sideNote}) {
-    selectedIndex.value = 2; // Plan tab index
+    selectedIndex.value = 2;
     if (showDialog) {
-      // Store the arguments temporarily
       Map<String, dynamic> args = {
         'showAddDayDialog': true,
         'initialSideNote': sideNote,
       };
       Get.offAllNamed('/home', arguments: args);
-      
-      // Reset the screen after navigation
+
       Future.delayed(const Duration(milliseconds: 100), () {
         screens[2] = PlanningView(
           showAddDayDialog: false,
@@ -173,7 +164,6 @@ class NavigationController extends GetxController {
       });
     }
 
-    // Update the planning view with new arguments
     screens[2] = PlanningView(
       showAddDayDialog: showDialog,
       initialSideNote: sideNote,

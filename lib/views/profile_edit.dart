@@ -20,7 +20,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
   String? userId = FirebaseAuth.instance.currentUser?.uid;
 
-  //User profile forms
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -38,7 +37,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       UserProfileMethods.loadUserData(
         userId: userId,
-        context: context, // Add context parameter
+        context: context, 
         onDataLoaded: (name, username, email, password, phone, avatarBytes) {
           setState(() {
             _nameController.text = name;
@@ -55,12 +54,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   }
 
   Future<void> _pickImage() async {
-    // Attempt to pick an image from the gallery
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
 
+    // Crop image
     if (pickedFile != null) {
-      // Attempt to crop the selected image
       CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: pickedFile.path,
         uiSettings: [
@@ -81,7 +79,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
       if (croppedFile != null) {
         setState(() {
-          _imageFile = File(croppedFile.path); // Save the cropped image
+          _imageFile = File(croppedFile.path); 
         });
       }
     }
@@ -106,11 +104,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           key: _formKey,
           child: Column(
             children: [
-              // Profile Picture
+
               Center(
                 child: Stack(
                   children: [
-                    // Circular profile picture
+
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.grey[300],
@@ -208,7 +206,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     );
   }
 
-  // Helper method to build profile text field with a label
   Widget _buildProfileField(
       String label, TextEditingController controller, bool isPassword,
       {bool readOnly = false}) {
@@ -238,7 +235,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             ),
           ),
           style: TextStyle(fontSize: 18),
-          // Adjust validation rules
+
           validator: (value) {
             if (value == null || value.isEmpty) {
               switch (label) {
@@ -278,7 +275,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     );
   }
 
-  // Helper method to build password field with a toggle button
   Widget _buildPasswordField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +291,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         TextFormField(
           controller: _passwordController,
           obscureText:
-              _obscurePassword, // Control visibility with _obscurePassword
+              _obscurePassword, 
           decoration: InputDecoration(
             border: UnderlineInputBorder(),
             suffixIcon: IconButton(
@@ -304,7 +300,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ),
               onPressed: () {
                 setState(() {
-                  _obscurePassword = !_obscurePassword; // Toggle visibility
+                  _obscurePassword = !_obscurePassword; 
                 });
               },
             ),

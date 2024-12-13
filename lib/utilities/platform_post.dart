@@ -13,7 +13,7 @@ class PlatformPostsContent {
   Map<String, Uint8List?> profilePictures = {};
   Map<String, Uint8List?> destinationImages = {};
 
-  // Method to retrieve cached images
+  // Retreive cached images
   Future<File?> getCachedImage(String imageName) async {
     final directory = await getApplicationDocumentsDirectory();
     final path = p.join(directory.path, imageName);
@@ -25,7 +25,7 @@ class PlatformPostsContent {
     }
   }
 
-  // Method to save images locally
+  // Save images locally
   Future<File> saveImageLocally(Uint8List imageBytes, String imageName) async {
     final directory = await getApplicationDocumentsDirectory();
     final path = p.join(directory.path, imageName);
@@ -33,7 +33,6 @@ class PlatformPostsContent {
     await file.writeAsBytes(imageBytes);
     return file;
   }
-
 
   Future<Map<String, dynamic>> fetchDestinationPosts() async {
     List<Map<String, dynamic>> destinationPosts = [];
@@ -53,12 +52,10 @@ class PlatformPostsContent {
               subDestinationDoc.data() as Map<String, dynamic>;
           String userId = subDestinationData['author'];
 
-          // Fetch user details based on the author field
           DocumentSnapshot userDoc =
               await _firestore.collection('users').doc(userId).get();
           var userData = userDoc.data() as Map<String, dynamic>;
 
-          // Fetch profile picture with local caching
           Uint8List? profileBytes;
           File? cachedProfileImage = await getCachedImage('$userId.webp');
           if (cachedProfileImage != null) {
@@ -80,7 +77,6 @@ class PlatformPostsContent {
           }
           profilePictures[userId] = profileBytes;
 
-          //Fetch sub-destination image with local caching
           Uint8List? destinationBytes;
           File? cachedDestinationImage =
               await getCachedImage('${subDestinationDoc.id}.webp');
@@ -103,12 +99,11 @@ class PlatformPostsContent {
           }
           destinationImages[subDestinationDoc.id] = destinationBytes;
 
-          // Combine destination and user data
           destinationPosts.add({
             'destinationId': destinationDoc.id,
             'subDestinationId': subDestinationDoc.id,
             'authorName': userData['name'],
-            'authorRole': userData['role'], // Add this line
+            'authorRole': userData['role'],
             'authorId': userId,
             'destination': subDestinationData['name'],
             'description': subDestinationData['description'],
@@ -127,7 +122,6 @@ class PlatformPostsContent {
       devtools.log('Error fetching posts: $e');
     }
 
-    // Return combined posts along with images
     return {
       'combinedPosts': destinationPosts,
       'profilePictures': profilePictures,
@@ -149,12 +143,10 @@ class PlatformPostsContent {
         var planData = planDoc.data() as Map<String, dynamic>;
         String userId = planData['userId'];
 
-        // Fetch user details based on the userId field
         DocumentSnapshot userDoc =
             await _firestore.collection('users').doc(userId).get();
         var userData = userDoc.data() as Map<String, dynamic>;
 
-        // Fetch profile picture with local caching
         Uint8List? profileBytes;
         File? cachedProfileImage = await getCachedImage('$userId.webp');
         if (cachedProfileImage != null) {
@@ -177,7 +169,6 @@ class PlatformPostsContent {
         }
         profilePictures[userId] = profileBytes;
 
-        // Fetch and process days data
         List<Map<String, dynamic>> daysData = [];
         if (planData['days'] != null) {
           List<Map<String, dynamic>> days =
@@ -192,7 +183,6 @@ class PlatformPostsContent {
           }
         }
 
-        // Add plan data to the list of plan posts
         planPosts.add({
           'planId': planDoc.id,
           'planName': planData['plan_name'],
