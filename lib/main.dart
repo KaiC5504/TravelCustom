@@ -15,19 +15,21 @@ import 'package:get/get.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   Get.config(
     enableLog: false,
     defaultTransition: Transition.noTransition,
     defaultPopGesture: false,
   );
-  
-  Get.put(NavigationController(
-    initialIndex: 0,
-    showAddDayDialog: false,
-    initialSideNote: null,
-  ), permanent: true);
-  
+
+  Get.put(
+      NavigationController(
+        initialIndex: 0,
+        showAddDayDialog: false,
+        initialSideNote: null,
+      ),
+      permanent: true);
+
   runApp(const MyApp());
 }
 
@@ -36,7 +38,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp( 
+    return GetMaterialApp(
       title: 'TravelCustom',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -60,43 +62,43 @@ class MyApp extends StatelessWidget {
           ],
         ),
         GetPage(
-          name: registerRoute, 
+          name: registerRoute,
           page: () => const RegisterView(),
           preventDuplicates: true,
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: loginRoute, 
+          name: loginRoute,
           page: () => const LoginView(),
           preventDuplicates: true,
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: travelRoute, 
+          name: travelRoute,
           page: () => const TravelView(),
           preventDuplicates: true,
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: searchRoute, 
+          name: searchRoute,
           page: () => const SearchPage(),
           preventDuplicates: true,
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: profileRoute, 
+          name: profileRoute,
           page: () => const ProfilePage(),
           preventDuplicates: true,
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: favouriteRoute, 
+          name: favouriteRoute,
           page: () => const FavouritePage(),
           preventDuplicates: true,
           transition: Transition.noTransition,
         ),
         GetPage(
-          name: editRoute, 
+          name: editRoute,
           page: () => const ProfileEditPage(),
           preventDuplicates: true,
           transition: Transition.noTransition,

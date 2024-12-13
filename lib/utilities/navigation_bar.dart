@@ -1,9 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:travelcustom/constants/routes.dart';
-import 'package:travelcustom/views/login_view.dart';
 import 'package:travelcustom/views/planning.dart';
 import 'package:travelcustom/views/platform_page.dart';
 import 'package:travelcustom/views/profile_view.dart';
@@ -122,18 +120,12 @@ class NavigationController extends GetxController {
 
     screens = [
       const TravelView(),
-      FirebaseAuth.instance.currentUser != null
-          ? const PlatformPage()
-          : const LoginView(),
-      FirebaseAuth.instance.currentUser != null
-          ? PlanningView(
-              showAddDayDialog: showAddDayDialog,
-              initialSideNote: initialSideNote,
-            )
-          : const LoginView(),
-      FirebaseAuth.instance.currentUser != null
-          ? const ProfilePage()
-          : const LoginView(),
+      const PlatformPage(),
+      PlanningView(
+        showAddDayDialog: showAddDayDialog,
+        initialSideNote: initialSideNote,
+      ),
+      const ProfilePage(),
     ];
   }
 
