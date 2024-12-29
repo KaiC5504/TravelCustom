@@ -59,6 +59,7 @@ class _FavouritePageState extends State<FavouritePage> {
                 Map<String, dynamic> subDestinationData =
                     subDestDoc.data() as Map<String, dynamic>;
                 subDestinationData['id'] = subDestDoc.id;
+                subDestinationData['parentId'] = destinationDoc.id;  // Store parent destination ID
 
                 try {
                   final ref = _storage
@@ -116,8 +117,9 @@ class _FavouritePageState extends State<FavouritePage> {
               itemCount: favourites.length,
               itemBuilder: (context, index) {
                 var destination = favourites[index];
-                String destinationId = destination['id'];
-                Uint8List? destinationImage = destinationImages[destinationId];
+                String destinationId = destination['parentId'];  // Use parent destination ID
+                String subDestinationId = destination['id'];    // Use sub-destination ID
+                Uint8List? destinationImage = destinationImages[subDestinationId];
 
                 return GestureDetector(
                   onTap: () async {
@@ -125,7 +127,7 @@ class _FavouritePageState extends State<FavouritePage> {
                       MaterialPageRoute(
                         builder: (context) => DestinationDetailPage(
                           destinationId: destinationId,
-                          subdestinationId: null,
+                          subdestinationId: subDestinationId,  // Pass the sub-destination ID
                         ),
                       ),
                     );
