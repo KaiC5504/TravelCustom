@@ -194,7 +194,7 @@ class _SearchPageState extends State<SearchPage> {
           .sort((a, b) => (b['rating'] ?? 0).compareTo(a['rating'] ?? 0));
     } else if (selectedSort == 'Popularity') {
       filteredList.sort(
-          (a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
+          (a, b) => (b['click_count'] ?? 0).compareTo(a['click_count'] ?? 0));
     }
 
     return filteredList;

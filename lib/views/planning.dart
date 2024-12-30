@@ -521,7 +521,7 @@ class _PlanningViewState extends State<PlanningView> {
                           index < rating ? Icons.star : Icons.star_border,
                           color:
                               index < rating ? Colors.amber[600] : Colors.grey,
-                          size: 40.0,
+                          size: 27.0,
                         ),
                         onPressed: () {
                           setState(() {
