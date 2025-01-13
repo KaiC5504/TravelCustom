@@ -395,7 +395,7 @@ class _PlanningViewState extends State<PlanningView> {
 
   Future<void> autoPlan(String userInput) async {
     final apiKey =
-        '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';
+        '';
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');
 
     try {
